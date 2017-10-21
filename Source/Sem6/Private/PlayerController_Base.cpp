@@ -3,6 +3,7 @@
 #include "PlayerController_Base.h"
 #include "Character_Base.h"
 #include "MyGameMode_Base.h"
+#include "PlayerState_Base.h"
 #include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
 
 

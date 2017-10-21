@@ -2,6 +2,7 @@
 
 #include "AICharacter.h"
 #include "MyAIController.h"
+#include "PlayerController_Base.h"
 
 AAICharacter::AAICharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

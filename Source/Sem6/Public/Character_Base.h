@@ -5,17 +5,15 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "MyType.h"
-#include "MyBox.h"
-#include "Loot_Base.h"
-#include "MyGameState_Base.h"
-#include "PlayerState_Base.h"
-#include "PlayerController_Base.h"
+#include "Interface/GameplayInterface.h"
 #include "Weapon_Base.h"
 #include "SpawnPoint_Base.h"
 #include "Character_Base.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCollectDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUseLootableDelegate);
+
+class APlayerState_Base;
 
 UCLASS()
 class SEM6_API ACharacter_Base : public ACharacter,

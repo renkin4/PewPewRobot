@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Interface/GameplayInterface.h"
 #include "MyType.h"
-#include "PlayerController_Base.h"
 #include "Weapon_Base.generated.h"
 
 UCLASS()

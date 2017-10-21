@@ -4,6 +4,7 @@
 #include "Character_Base.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
 #include "MyGameState_Base.h"
+#include "PlayerController_Base.h"
 #include "MyPlayerStart_Base.h"
 #include "Net/UnrealNetwork.h"
 

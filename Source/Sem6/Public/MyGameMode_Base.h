@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
-#include "PlayerState_Base.h"
-#include "MyPlayerStart_Base.h"
 #include "Runtime/Engine/Classes/GameFramework/PlayerStart.h"
-#include "Runtime/Engine/Classes/Engine/PlayerStartPIE.h"
 #include "MyGameMode_Base.generated.h"
+
+class AMyPlayerStart_Base;
+class PlayerState_Base;
 
 /**
  * 

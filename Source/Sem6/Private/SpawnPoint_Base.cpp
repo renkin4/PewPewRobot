@@ -5,6 +5,8 @@
 #include "Runtime/Engine/Classes/Materials/Material.h"
 #include "Character_Base.h"
 #include "MyPlayerStart_Base.h"
+#include "PlayerController_Base.h"
+#include "PlayerState_Base.h"
 #include "Net/UnrealNetwork.h"
 
 

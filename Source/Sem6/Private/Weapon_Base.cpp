@@ -5,6 +5,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerController_Base.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
