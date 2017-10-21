@@ -118,8 +118,8 @@ void AWeapon_Base::InstantHitFire()
 			{
 				//TODO check if it's player // AI deal damage to them
 				//Null UDamageType
-				TSubclassOf<UDamageType> P;
-				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, P);
+				
+				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
 				/*Debug*/
 				//TODO refactor to Debug Line Function
 				DrawDebugSolidBox(GetWorld(), ShootEndPoint, FVector(10.0f, 10.0f, 5.0f), FColor::Red, false, 0.5f, 0);

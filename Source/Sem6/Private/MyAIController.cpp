@@ -262,9 +262,8 @@ void AMyAIController::ShootEnemy_Implementation()
 	}
 	if (bCanShoot)
 	{
-		TSubclassOf<UDamageType> P;
 		//TEMP TEMP TEMP SHOOT FROM WEAPON
-		UGameplayStatics::ApplyPointDamage(Hit.Actor.Get(), 10.0f, Hit.ImpactNormal, DamageInfo,this,GetPawn(),P);
+		UGameplayStatics::ApplyPointDamage(Hit.Actor.Get(), 1.0f, Hit.ImpactNormal, DamageInfo,this,GetPawn(), InstantShotDamageType);
 
 		//TODO Start Fire Weapon if weapon exist
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, TEXT("Shoot if weapon Exist"));

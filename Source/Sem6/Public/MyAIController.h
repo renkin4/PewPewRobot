@@ -71,6 +71,10 @@ protected:
 
 	bool bIsStunned;
 
+	/*Temp*/
+	UPROPERTY(EditAnywhere, Category = "Damage")
+	TSubclassOf<UDamageType> InstantShotDamageType;
+
 public:
 	/** Returns BlackboardComp subobject **/
 	FORCEINLINE UBlackboardComponent* GetBlackboardComp() const { return BlackboardComp; }

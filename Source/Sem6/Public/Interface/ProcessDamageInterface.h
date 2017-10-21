@@ -20,5 +20,5 @@ class IProcessDamageInterface
 	GENERATED_IINTERFACE_BODY()
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "ProcessDamageInterface", meta = (DisplayName = "ProcessDamageTypeDamage"))
-	float ProcessDamageTypeDamage(float Damage);
+	float ProcessDamageTypeDamage(float Damage, AActor* ActorToIgnore);
 };

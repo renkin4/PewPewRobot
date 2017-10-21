@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "MyType.h"
 #include "Interface/GameplayInterface.h"
+#include "Interface/ProcessDamageInterface.h"
 #include "Character_Base.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCollectDelegate);
@@ -15,7 +16,8 @@ class APlayerState_Base;
 
 UCLASS()
 class SEM6_API ACharacter_Base : public ACharacter,
-	public IGameplayInterface
+	public IGameplayInterface,
+	public IProcessDamageInterface
 {
 	GENERATED_BODY()
 	friend class UMyCharacterMovementComponent;
@@ -45,6 +47,8 @@ protected:
 	virtual ELootAbleType GetLootableType_Implementation() override;
 
 	virtual EWeaponType GetWeaponType_Implementation() override;
+
+	virtual float ProcessDamageTypeDamage_Implementation(float Damage, AActor* ActorToIgnore) override;
 
 	/*Internal Movement*/
 	void MoveForward(float axis);
@@ -122,6 +126,9 @@ protected:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Health")
 	void OnRep_Health();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Death")
+	void OnDeathNotify();
 	/*----------------------------------------------------*/
 
 	UPROPERTY(EditAnywhere, Category = "WalkMovement")

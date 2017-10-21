@@ -15,6 +15,7 @@
 #include "PlayerState_Base.h"
 #include "PlayerController_Base.h"
 #include "Weapon_Base.h"
+#include "DamageType_Base.h"
 #include "SpawnPoint_Base.h"
 
 // Sets default values
@@ -55,6 +56,7 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
 {
+	float ActualDamage;
 	//IgnoreOnDeath
 	if (bIsDying)
 	{
@@ -63,8 +65,20 @@ float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent
 	}
 	//---------------------------------//
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Ouch"));
-	Health = Health - Damage;
+	/*Taking damage*/
+	UDamageType_Base* DamageTypeB = Cast<UDamageType_Base>(DamageEvent.DamageTypeClass->GetDefaultObject());
+	IProcessDamageInterface* ProcessInterface = Cast<IProcessDamageInterface>(DamageTypeB);
+	if (ProcessInterface) 
+	{
+		ActualDamage = ProcessInterface->Execute_ProcessDamageTypeDamage(DamageTypeB, Damage, this);
+	}
+	else 
+	{
+		ActualDamage = Damage;
+	}
+	Health = Health - ActualDamage;
+	//---------------------------------//
+
 	/*Run for server On Rep*/
 	if (Role == ROLE_Authority)
 		OnRep_Health();
@@ -73,12 +87,7 @@ float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent
 	//DeathNotify
 	if (Health <= 0.0f) 
 	{
-		//TODO Refactor these to DeathNotify
-		DisableInput(MyPlayerController);
-		bIsDying = true;
-		PlayAnimationState();
-		GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
-		//---------------------------------//
+		OnDeathNotify();
 	}
 	//---------------------------------//
 
@@ -95,6 +104,11 @@ ELootAbleType ACharacter_Base::GetLootableType_Implementation()
 EWeaponType ACharacter_Base::GetWeaponType_Implementation()
 {
 	return EWeaponType::WT_None;
+}
+
+float ACharacter_Base::ProcessDamageTypeDamage_Implementation(float Damage, AActor* ActorToIgnore)
+{
+	return 0.0f;
 }
 
 // Called when the game starts or when spawned
@@ -549,6 +563,14 @@ void ACharacter_Base::OnRep_MyPlayerState()
 void ACharacter_Base::OnRep_Health_Implementation()
 {
 
+}
+
+void ACharacter_Base::OnDeathNotify_Implementation()
+{
+	DisableInput(MyPlayerController);
+	bIsDying = true;
+	PlayAnimationState();
+	GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
 }
 
 bool ACharacter_Base::CanRun()

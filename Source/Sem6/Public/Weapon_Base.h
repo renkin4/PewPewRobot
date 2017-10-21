@@ -43,6 +43,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool ShowFireLine;
 
+	UPROPERTY(EditAnywhere, Category = "DamageType")
+	TSubclassOf<UDamageType> InstantShotDamageType;
+
 public:	
 
 	virtual ELootAbleType GetLootableType_Implementation() override;
