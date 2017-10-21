@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Interface/GameplayInterface.h"
 #include "MyType.h"
+#include "Interface/GameplayInterface.h"
 #include "Weapon_Base.generated.h"
 
 UCLASS()

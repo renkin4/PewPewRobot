@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PlayerState_Base.h"
 #include "GameFramework/GameState.h"
 #include "MyGameState_Base.generated.h"
 
+class APlayerState_Base;
 /**
  * 
  */

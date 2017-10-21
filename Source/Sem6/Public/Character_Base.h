@@ -6,8 +6,6 @@
 #include "GameFramework/Character.h"
 #include "MyType.h"
 #include "Interface/GameplayInterface.h"
-#include "Weapon_Base.h"
-#include "SpawnPoint_Base.h"
 #include "Character_Base.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCollectDelegate);

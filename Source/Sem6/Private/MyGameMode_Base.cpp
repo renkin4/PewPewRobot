@@ -6,6 +6,7 @@
 #include "Loot_Base.h"
 #include "Engine.h"
 #include "PlayerState_Base.h"
+#include "SpawnPoint_Base.h"
 #include "MyPlayerStart_Base.h"
 #include "PlayerController_Base.h"
 #include "Runtime/Engine/Public/EngineUtils.h"

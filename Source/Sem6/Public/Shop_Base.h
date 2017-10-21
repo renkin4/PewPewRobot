@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MyType.h"
 #include "GameFramework/Actor.h"
+#include "MyType.h"
 #include "Shop_Base.generated.h"
 
 UCLASS()

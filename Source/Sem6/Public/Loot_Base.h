@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Interface/GameplayInterface.h"
-#include "MyType.h"
 #include "GameFramework/Actor.h"
+#include "MyType.h"
+#include "Interface/GameplayInterface.h"
 #include "Loot_Base.generated.h"
 
 UCLASS()

@@ -6,6 +6,7 @@
 #include "MyGameState_Base.h"
 #include "PlayerController_Base.h"
 #include "MyPlayerStart_Base.h"
+#include "SpawnPoint_Base.h"
 #include "Net/UnrealNetwork.h"
 
 

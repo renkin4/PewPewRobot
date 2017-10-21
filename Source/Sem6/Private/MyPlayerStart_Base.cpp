@@ -2,6 +2,7 @@
 
 #include "MyPlayerStart_Base.h"
 #include "MyGameMode_Base.h"
+#include "SpawnPoint_Base.h"
 
 AMyPlayerStart_Base::AMyPlayerStart_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)

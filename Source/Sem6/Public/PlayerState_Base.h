@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "SpawnPoint_Base.h"
-#include "Runtime/Engine/Classes/GameFramework/PlayerStart.h"
 #include "PlayerState_Base.generated.h"
+
+class ASpawnPoint_Base;
+class MyPlayerStart_Base;
 
 /**
  * 

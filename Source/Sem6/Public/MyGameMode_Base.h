@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
-#include "Runtime/Engine/Classes/GameFramework/PlayerStart.h"
 #include "MyGameMode_Base.generated.h"
 
 class AMyPlayerStart_Base;

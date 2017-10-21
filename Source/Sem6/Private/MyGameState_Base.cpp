@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MyGameState_Base.h"
+#include "PlayerState_Base.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 AMyGameState_Base::AMyGameState_Base(const FObjectInitializer& ObjectInitializer)

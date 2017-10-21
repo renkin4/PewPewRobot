@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerStart.h"
-#include "SpawnPoint_Base.h"
 #include "MyPlayerStart_Base.generated.h"
 
+class ASpawnPoint_Base;
 /**
  * 
  */

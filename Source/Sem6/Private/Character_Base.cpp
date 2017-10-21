@@ -14,7 +14,8 @@
 #include "MyGameState_Base.h"
 #include "PlayerState_Base.h"
 #include "PlayerController_Base.h"
-
+#include "Weapon_Base.h"
+#include "SpawnPoint_Base.h"
 
 // Sets default values
 //Constructor
