@@ -60,6 +60,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AICondition")
 	bool GetIsAIStunned() const { return bIsStunned; }
 
+	UPROPERTY(EditAnywhere, Category = "LineOfSight")
+	float LineOfSightRangeSq = 1000000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "LineOfSight")
+	float DotProductRange;
+
 protected:
 	int32 EnemyKeyID;
 	int32 IsStunnedID;

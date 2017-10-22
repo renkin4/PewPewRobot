@@ -3,6 +3,7 @@
 #include "MyAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Bool.h"
+#include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "PlayerState_Base.h"
 #include "MyGameState_Base.h"
@@ -172,9 +173,18 @@ bool AMyAIController::HasWeaponLOSToEnemy(AActor* InEnemyActor, const bool bAnyE
 	TraceParams.bReturnPhysicalMaterial = true;
 	FVector StartLocation = MyBot->GetActorLocation();
 	StartLocation.Z += GetPawn()->BaseEyeHeight; //look from eyes
-
 	FHitResult Hit(ForceInit);
 	const FVector EndLocation = InEnemyActor->GetActorLocation();
+	//Find the Look at Angle
+	float Dot = FVector::DotProduct(
+		UKismetMathLibrary::GetForwardVector(GetPawn()->GetActorRotation()),
+		UKismetMathLibrary::GetForwardVector(UKismetMathLibrary::FindLookAtRotation(StartLocation, EndLocation))
+		);
+	//Check for distance And Angle
+	if ((StartLocation - EndLocation).SizeSquared() > LineOfSightRangeSq || Dot < DotProductRange)
+	{
+		return false;
+	}
 	GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Visibility, TraceParams);
 
 	if (Hit.bBlockingHit == true)
