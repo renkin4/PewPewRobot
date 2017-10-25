@@ -239,7 +239,7 @@ void ACharacter_Base::OnScore()
 
 void ACharacter_Base::OnFire()
 {
-	if (!CanFire())
+	if (!CanFire() && !CurrentWeapon->CanFire())
 		return;
 
 	if (CurrentWeapon == NULL) 
@@ -257,13 +257,14 @@ void ACharacter_Base::OnFire()
 	case EWeaponType::WT_RocketLauncher:
 		CharacterState = ECharacterState::CS_FiringRocket;
 		PlayAnimationState();
+		FireWeapon();
 		break;
 	case EWeaponType::WT_MachineGun:
 		CharacterState = ECharacterState::CS_Firing;
 		PlayAnimationState();
 		FireWeapon();
 		//TODO change to Event Notify From Animation
-		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, 0.1f, true);
+		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, CurrentWeapon->GetWeaponDelay(), true);
 		break;
 	default:
 		break;
@@ -671,7 +672,7 @@ void ACharacter_Base::PlayAnimationState()
 		break;
 	case ECharacterState::CS_HoldingRocket:
 		SERVER_StopAnimMontage(GetCurrentMontage());
-		SERVER_PlayAnimMontage(ShootingMontage, 1.0f, "HoldingRocket");
+		SERVER_PlayAnimMontage(RocketLauncherMontage, 1.0f, "HoldingRocket");
 		//SERVER_SwitchAnimMontage("StartShooting", "HoldingRocket", RocketLauncherMontage);
 		break;
 	case ECharacterState::CS_Punching:

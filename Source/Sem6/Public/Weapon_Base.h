@@ -30,6 +30,21 @@ protected:
 
 	void InstantHitFire();
 
+	void SpawnProjectile();
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void SERVER_SpawnProjectile();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
+	FWeaponStats MyStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	TSubclassOf<AActor> ProjectileToSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	FVector SocketLocation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	FRotator SocketRotation;
 	//TODO set at Blueprint 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponType")
 	EWeaponFireType WeaponFireType;
@@ -46,6 +61,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DamageType")
 	TSubclassOf<UDamageType> InstantShotDamageType;
 
+	UPROPERTY(EditAnywhere, Category = "DamageType")
+	TSubclassOf<UDamageType> ProjectileDamage;
+
+	bool bCanFire;
+
+	FTimerHandle SpawnFireCoolDown;
+
+	void ResetCanFire();
 public:	
 
 	virtual ELootAbleType GetLootableType_Implementation() override;
@@ -57,10 +80,15 @@ public:
 
 	void SetPawnOwner(AController* Controller);
 
+	UFUNCTION(BlueprintPure, Category = "Weapon Stats")
+	float GetWeaponDelay() { return MyStats.ShotsBetweenInterval; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon State")
+	bool CanFire() { return bCanFire; }
 private:
 	FVector2D GetScreenLocation();
 
-	void RayCastFromMiddle();
+	void FilterFireType();
 
 	void DebugLine(FVector Start, FVector End, FColor Color);
 

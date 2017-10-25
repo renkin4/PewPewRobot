@@ -1,0 +1,8 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSteamSessions\Intermediate\Build\Win64\UE4\Development\AdvancedSteamSessions\Module.AdvancedSteamSessions.cpp.obj"
+"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSteamSessions\Intermediate\Build\Win64\UE4\Development\AdvancedSteamSessions\AdvancedSteamSessions.generated.cpp.obj"
+"D:\UREProject\PewPewRobot\Sem6\trunk\Intermediate\Build\Win64\UE4\Development\AdvancedSteamSessions\PCLaunch.rc.res"
+/OUT:"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSteamSessions\Binaries\Win64\UE4-AdvancedSteamSessions.lib"

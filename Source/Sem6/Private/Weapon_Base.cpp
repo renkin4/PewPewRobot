@@ -16,6 +16,7 @@ AWeapon_Base::AWeapon_Base()
 	WeaponType = EWeaponType::WT_MachineGun;
 	WeaponFireType = EWeaponFireType::WT_InstantHit;
 	bReplicates = true;
+	bCanFire = true;
 
 	ShowFireLine = false;
 }
@@ -35,6 +36,11 @@ void AWeapon_Base::Tick(float DeltaTime)
 
 }
 
+void AWeapon_Base::ResetCanFire()
+{
+	bCanFire = true;
+}
+
 ELootAbleType AWeapon_Base::GetLootableType_Implementation()
 {
 	return LootableType;
@@ -47,7 +53,8 @@ EWeaponType AWeapon_Base::GetWeaponType_Implementation()
 
 void AWeapon_Base::FireWeapon()
 {
-	RayCastFromMiddle();
+	FilterFireType();
+	
 	//TODO Simulate Particle and sound
 	//TODO Set EditAnywhere for Particle And sound
 }
@@ -72,13 +79,14 @@ FVector2D AWeapon_Base::GetScreenLocation()
 	return FVector2D(0.0f, 0.0f);
 }
 
-void AWeapon_Base::RayCastFromMiddle()
+void AWeapon_Base::FilterFireType()
 {
 	switch (WeaponFireType)
 	{
 	case EWeaponFireType::WT_None:
 		break;
 	case EWeaponFireType::WT_ProjecTile:
+		SpawnProjectile();
 		break;
 	case EWeaponFireType::WT_InstantHit:
 		InstantHitFire();
@@ -143,6 +151,54 @@ void AWeapon_Base::InstantHitFire()
 			DebugLine(StartPoint, EndPoint, FColor::Green);
 		}
 	}
+}
+
+void AWeapon_Base::SpawnProjectile()
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_SpawnProjectile();
+		return;
+	}
+
+	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	FVector WorldPosition;
+	FVector WorldDirection;
+	FHitResult HitScreenData(ForceInit);
+
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnInfo.Owner = this;
+	SocketLocation = StaticMeshComp[0]->GetSocketLocation("SpawnProjectileLocation");;
+
+	//TODO set location and rotation here
+	if (PlayerOwner) 
+	{
+		if (PlayerOwner->GetIsAiming()) 
+		{
+			PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);
+			FVector EndPoint = WorldPosition + (WorldDirection * 5000);
+			FRotator SpawnRotation = UKismetMathLibrary::FindLookAtRotation(PlayerOwner->GetPawn()->GetActorLocation(), EndPoint);
+			GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SpawnRotation, SpawnInfo);
+		}
+		else 
+		{
+			SocketRotation = StaticMeshComp[0]->GetSocketRotation("SpawnProjectileLocation");;
+			GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SocketRotation, SpawnInfo);
+		}
+	}
+	bCanFire = false;
+	GetWorldTimerManager().SetTimer(SpawnFireCoolDown, this, &AWeapon_Base::ResetCanFire, GetWeaponDelay(), true);
+}
+
+void AWeapon_Base::SERVER_SpawnProjectile_Implementation()
+{
+	SpawnProjectile();
+}
+
+bool AWeapon_Base::SERVER_SpawnProjectile_Validate()
+{
+	return true;
 }
 
 void AWeapon_Base::DebugLine(FVector Start, FVector End, FColor Color)

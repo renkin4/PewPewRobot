@@ -90,3 +90,18 @@ struct FItemsToSell
 	TArray<TSubclassOf<AActor>> ActorClass;
 
 };
+
+USTRUCT(BlueprintType)
+struct FWeaponStats 
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
+	float ShotsBetweenInterval;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
+	float RadialRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
+	float StunDelayDuration;
+};
