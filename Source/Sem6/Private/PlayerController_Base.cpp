@@ -5,6 +5,7 @@
 #include "MyGameMode_Base.h"
 #include "PlayerState_Base.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
 
 
@@ -68,6 +69,7 @@ void APlayerController_Base::InitializeVarOnPossessed(ACharacter* MyChar, APlaye
 	ACharacter_Base* CharRef = Cast<ACharacter_Base>(MyChar);
 	CharRef->SetMyPlayerController(SelfPController);
 	CharRef->SetMyPlayerState(SelfPlayerState);
+	CharRef->OnRep_MyPlayerState();
 }
 
 APlayerState* APlayerController_Base::GetPlayerState()

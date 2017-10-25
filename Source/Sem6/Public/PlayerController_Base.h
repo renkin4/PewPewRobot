@@ -95,4 +95,5 @@ protected:
 
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
+
 };

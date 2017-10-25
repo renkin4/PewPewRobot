@@ -101,13 +101,11 @@ protected:
 	APlayerController_Base* MyPlayerController = NULL;
 
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_MyPlayerState, Category = "PlayerState")
-	APlayerState_Base* MyPlayerState;
+	APlayerState_Base* MyPlayerState = NULL;
 
 	UFUNCTION()
 	void OnRep_MyPlayerController();
 
-	UFUNCTION()
-	void OnRep_MyPlayerState();
 	/*Health*/
 	//TODO On Rep These// shift to Player state
 	bool bDie;
@@ -291,7 +289,20 @@ protected:
 	int32 SelectedItemIndex;
 
 	/*----------------------------------------------------*/
+	/*Team Color*/
+	UPROPERTY(EditAnywhere, Category = "Team Color")
+	TArray<UMaterialInstance*> TeamColorMat;
 
+	void UpdateColor(APlayerState_Base* PState, USkeletalMeshComponent* SMesh);
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void SERVER_UpdateColor(APlayerState_Base* PState, USkeletalMeshComponent* SMesh);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MULTICAST_UpdateColor(APlayerState_Base* PState, USkeletalMeshComponent* SMesh);
+
+	FTimerHandle UpdateColorTimeHandler;
+	/*----------------------------------------------------*/
 	/*Debug*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bEnableLootableSphere;
@@ -321,4 +332,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Loot")
 	FHitResult GetCurrentSelectedItem();
+
+	UFUNCTION()
+	void OnRep_MyPlayerState();
 };

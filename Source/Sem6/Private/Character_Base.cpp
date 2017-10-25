@@ -23,6 +23,7 @@
 ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMyCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	bAlwaysRelevant = true;
 	RunningSpeedModifier = 1.8f;
 	WalkSpeedModifier = 1.0f;
 	bIsRunning = false;
@@ -115,6 +116,7 @@ float ACharacter_Base::ProcessDamageTypeDamage_Implementation(float Damage, AAct
 void ACharacter_Base::BeginPlay()
 {
 	Super::BeginPlay();
+
 }
 
 // Called every frame
@@ -491,6 +493,49 @@ void ACharacter_Base::DrawSphereDebugLine(float Radius, FVector CenterLocation, 
 	}
 }
 
+void ACharacter_Base::UpdateColor(APlayerState_Base* PState, USkeletalMeshComponent* SMesh)
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_UpdateColor(PState, SMesh);
+		return;
+	}
+	MULTICAST_UpdateColor(PState, SMesh);
+}
+
+void ACharacter_Base::SERVER_UpdateColor_Implementation(APlayerState_Base* PState, USkeletalMeshComponent* SMesh)
+{
+	UpdateColor(PState, SMesh);
+}
+
+bool ACharacter_Base::SERVER_UpdateColor_Validate(APlayerState_Base* PState, USkeletalMeshComponent* SMesh)
+{
+	return true;
+}
+
+void ACharacter_Base::MULTICAST_UpdateColor_Implementation(APlayerState_Base* PState, USkeletalMeshComponent* SMesh)
+{
+	if (PState != NULL)
+	{
+		uint8 TeamNum = PState->GetTeamNum();
+		switch (TeamNum)
+		{
+		case 1:
+			SMesh->SetMaterial(0, TeamColorMat[0]);
+			break;
+		case 2:
+			SMesh->SetMaterial(0, TeamColorMat[1]);
+			break;
+		case 3:
+			SMesh->SetMaterial(0, TeamColorMat[2]);
+			break;
+		case 4:
+			SMesh->SetMaterial(0, TeamColorMat[3]);
+			break;
+		}
+	}
+}
+
 FHitResult ACharacter_Base::GetCurrentSelectedItem()
 {
 	if (LootableOutHit.Num() <= 0)
@@ -556,6 +601,7 @@ void ACharacter_Base::OnRep_MyPlayerController()
 
 void ACharacter_Base::OnRep_MyPlayerState()
 {
+	UpdateColor(MyPlayerState, GetMesh());
 }
 
 void ACharacter_Base::OnRep_Health_Implementation()
