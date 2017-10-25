@@ -39,6 +39,9 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	bIsHoldingBox = false;
 	bIsAtBoxHolderLocation = false;
 	SelectedItemIndex = 0;
+	MaxStamina = 100.0f;
+	Stamina = MaxStamina;
+	bShouldRegenHealth = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -127,6 +130,7 @@ void ACharacter_Base::Tick(float DeltaTime)
 	{
 		SphereTraceLootable();
 		bIsTargeting = GetMyPlayerController()->GetIsAiming();
+		RegenStamina();
 	}
 
 }
@@ -599,27 +603,60 @@ void ACharacter_Base::OnRep_MyPlayerController()
 {
 }
 
+void ACharacter_Base::RegenStamina()
+{
+	if (bShouldRegenHealth) 
+	{
+		Stamina += GetWorld()->GetDeltaSeconds() * RegenRate;
+		//stop Regen if over MaxStamina
+		if (Stamina >= MaxStamina)
+		{
+			Stamina = MaxStamina;
+			bShouldRegenHealth = false;
+		}
+	}
+}
+
+void ACharacter_Base::TriggerRegenStamina()
+{
+	bShouldRegenHealth = true;
+}
+
 void ACharacter_Base::OnRep_MyPlayerState()
 {
 	UpdateColor(MyPlayerState, GetMesh());
 }
 
+float ACharacter_Base::SetStamina(float StaminaVal)
+{
+	Stamina = StaminaVal;
+	GetWorldTimerManager().SetTimer(DelayStaminaRegenHandle, this, &ACharacter_Base::TriggerRegenStamina, DelayBeforeRegenStamina, false);
+
+	if (Stamina < 0.0f)
+	{
+		Stamina = 0.0f;
+	}
+	bShouldRegenHealth = false;
+	return Stamina;
+}
+
 void ACharacter_Base::OnRep_Health_Implementation()
 {
-
 }
 
 void ACharacter_Base::OnDeathNotify_Implementation()
 {
 	DisableInput(MyPlayerController);
 	bIsDying = true;
+	//TODO Check for Available Currency, Deduct from there
+	MyPlayerState->SetPlayerCurrency(MyPlayerState->GetPlayerCurrency() - 5.0f);
 	PlayAnimationState();
 	GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
 }
 
 bool ACharacter_Base::CanRun()
 {
-	if (bIsHoldingBox || bIsTargeting)
+	if (bIsHoldingBox || bIsTargeting || Stamina <= 0.0f)
 	{
 		return false;
 	}

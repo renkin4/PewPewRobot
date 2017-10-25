@@ -12,9 +12,10 @@ float UMyCharacterMovementComponent::GetMaxSpeed() const
 	if (MyCharacter)
 	{
 
-		if (MyCharacter->IsRunning())
+		if (MyCharacter->IsRunning() && MyCharacter->CanRun())
 		{
 			SpeedMod *= MyCharacter->RunningSpeedModifier;
+			MyCharacter->SetStamina(MyCharacter->GetStaminaVal() - StaminaConsumption);
 		}
 		//TODO check for !targetting and !Carrying
 		else

@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController_Base.h"
+#include "Character_Base.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
@@ -60,7 +61,11 @@ EWeaponType AWeapon_Base::GetWeaponType_Implementation()
 void AWeapon_Base::FireWeapon()
 {
 	FilterFireType();
-	
+	ACharacter_Base* CharOwner = Cast<ACharacter_Base>(PawnOwner->GetPawn());
+	if (CharOwner) 
+	{
+		CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost);
+	}
 	//TODO Simulate Particle and sound
 	//TODO Set EditAnywhere for Particle And sound
 }

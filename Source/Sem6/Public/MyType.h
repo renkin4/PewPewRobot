@@ -104,4 +104,8 @@ struct FWeaponStats
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
 	float StunDelayDuration;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
+	float StaminaCost;
+
 };

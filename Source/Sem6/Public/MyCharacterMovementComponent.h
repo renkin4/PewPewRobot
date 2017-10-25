@@ -16,4 +16,5 @@ class SEM6_API UMyCharacterMovementComponent : public UCharacterMovementComponen
 	
 	virtual float GetMaxSpeed() const override;
 
+	float StaminaConsumption = 0.2f;
 };
