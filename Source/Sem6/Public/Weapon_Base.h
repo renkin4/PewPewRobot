@@ -71,6 +71,16 @@ protected:
 	FTimerHandle SpawnFireCoolDown;
 
 	void ResetCanFire();
+
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	bool bShowTrajectory;
+
+	void DrawPredictTrajectory();
+
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	float ProjectileGravity = 0.1f;
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	float ProjectileVelocity = 1000.0f;
 public:	
 
 	virtual ELootAbleType GetLootableType_Implementation() override;

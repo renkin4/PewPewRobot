@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController_Base.h"
+#include "Kismet/GameplayStatics.h"
 #include "Character_Base.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -19,6 +20,7 @@ AWeapon_Base::AWeapon_Base()
 	WeaponFireType = EWeaponFireType::WT_InstantHit;
 	bReplicates = true;
 	bCanFire = true;
+	bShowTrajectory = true;
 
 	ShowFireLine = false;
 }
@@ -35,7 +37,14 @@ void AWeapon_Base::BeginPlay()
 void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
+	if (PC)
+	{
+		if (bShowTrajectory && PC->GetIsAiming())
+		{
+			DrawPredictTrajectory();
+		}
+	}
 }
 
 void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -46,6 +55,43 @@ void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 void AWeapon_Base::ResetCanFire()
 {
 	bCanFire = true;
+}
+
+void AWeapon_Base::DrawPredictTrajectory()
+{
+	GetSpawnLocation();
+	GetSpawnRotation();
+	FVector TempLocation = SocketLocation;
+	/*Predict Trajectory*/
+	FVector CurrentVel = (ProjectileVelocity * UKismetMathLibrary::GetForwardVector(SocketRotation));
+	const float GravityZ = GetWorld()->GetDefaultGravityZ()*ProjectileGravity;
+	const float ProjectileRadius = 20.0f;
+	float CurrentTime = 0.f;
+	FVector TraceStart = TempLocation;
+	FVector TraceEnd = TraceStart;
+	const float MaxSimTime = 5.0f;
+	const float SimFrequency = 5.0f;
+	const float SubstepDeltaTime = 1.0f / SimFrequency;
+	TArray<FVector> PathSeg;
+	PathSeg.Add(TempLocation);
+	while (CurrentTime < MaxSimTime)
+	{
+		const float ActualStepDeltaTime = FMath::Min(MaxSimTime - CurrentTime, SubstepDeltaTime);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f"), ActualStepDeltaTime));
+		CurrentTime += ActualStepDeltaTime;
+		FVector OldVelocity = CurrentVel;
+		TraceStart = TraceEnd;
+		CurrentVel = OldVelocity + FVector(0.f, 0.f, GravityZ * ActualStepDeltaTime);
+		TraceEnd = TraceStart + (OldVelocity + CurrentVel) * (0.5f * ActualStepDeltaTime);
+		PathSeg.Add(TraceEnd);
+	}
+
+	for (int x = 0; x < PathSeg.Num() - 1; x++)
+	{
+		DrawDebugLine(GetWorld(), PathSeg[x], PathSeg[x + 1], FColor::Purple, false, 0.05f, 0, 0.5f);
+	}
+
+	/*-----------------------------------------------------------*/
 }
 
 ELootAbleType AWeapon_Base::GetLootableType_Implementation()
@@ -198,6 +244,8 @@ void AWeapon_Base::GetSpawnRotation()
 			PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);
 			FVector EndPoint = WorldPosition + (WorldDirection * 5000);
 			SocketRotation = UKismetMathLibrary::FindLookAtRotation(PlayerOwner->GetPawn()->GetActorLocation(), EndPoint);
+			FVector TempLocation = SocketLocation;
+			
 		}
 		else
 		{
