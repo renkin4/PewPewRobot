@@ -23,6 +23,8 @@ protected:
 	virtual void BeginPlay() override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
 
 	AController* PawnOwner;
 
@@ -30,10 +32,14 @@ protected:
 
 	void InstantHitFire();
 
-	void SpawnProjectile();
+	void SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot);
 
 	UFUNCTION(Server,Reliable,WithValidation)
-	void SERVER_SpawnProjectile();
+	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot);
+
+
+	void GetSpawnRotation();
+	void GetSpawnLocation();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
 	FWeaponStats MyStats;

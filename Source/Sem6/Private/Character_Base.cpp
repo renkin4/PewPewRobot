@@ -121,6 +121,8 @@ void ACharacter_Base::BeginPlay()
 void ACharacter_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if(Controller->IsA(AAIController::StaticClass()))
+		return;
 
 	SphereTraceLootable();
 	if (GetMyPlayerController()->IsValidLowLevel()) 
@@ -239,14 +241,14 @@ void ACharacter_Base::OnScore()
 
 void ACharacter_Base::OnFire()
 {
-	if (!CanFire() && !CurrentWeapon->CanFire())
-		return;
-
-	if (CurrentWeapon == NULL) 
+	if (CurrentWeapon == NULL)
 	{
 		OnPunch();
 		return;
 	}
+
+	if (!CanFire() || !CurrentWeapon->CanFire())
+		return;
 
 	switch (Cast<IGameplayInterface>(CurrentWeapon)->Execute_GetWeaponType(CurrentWeapon))
 	{

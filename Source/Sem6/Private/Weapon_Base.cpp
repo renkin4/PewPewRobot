@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController_Base.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AWeapon_Base::AWeapon_Base()
@@ -34,6 +35,11 @@ void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 }
 
 void AWeapon_Base::ResetCanFire()
@@ -86,7 +92,14 @@ void AWeapon_Base::FilterFireType()
 	case EWeaponFireType::WT_None:
 		break;
 	case EWeaponFireType::WT_ProjecTile:
-		SpawnProjectile();
+		if (CanFire()) 
+		{
+			GetSpawnLocation();
+			GetSpawnRotation();
+			SpawnProjectile(SocketLocation, SocketRotation);
+			bCanFire = false;
+			GetWorldTimerManager().SetTimer(SpawnFireCoolDown, this, &AWeapon_Base::ResetCanFire, GetWeaponDelay(), true);
+		}
 		break;
 	case EWeaponFireType::WT_InstantHit:
 		InstantHitFire();
@@ -153,50 +166,63 @@ void AWeapon_Base::InstantHitFire()
 	}
 }
 
-void AWeapon_Base::SpawnProjectile()
+void AWeapon_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot)
 {
-	if (Role < ROLE_Authority) 
+	if (Role < ROLE_Authority)
 	{
-		SERVER_SpawnProjectile();
+		SERVER_SpawnProjectile(SocketLocation, SocketRotation);
 		return;
 	}
+	FTransform SpawnTM(SpawnRot, SpawnLoc);
+	AActor* Projectile = Cast<AActor>(UGameplayStatics::BeginDeferredActorSpawnFromClass(this, ProjectileToSpawn, SpawnTM));
 
+	if (Projectile)
+	{
+		Projectile->Instigator = Instigator;
+		Projectile->SetOwner(this);
+
+		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTM);
+	}
+
+	//FActorSpawnParameters SpawnInfo;
+	//SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	//SpawnInfo.Owner = this;
+
+	//GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SocketRotation, SpawnInfo);
+}
+
+void AWeapon_Base::GetSpawnLocation()
+{
+	SocketLocation = StaticMeshComp[0]->GetSocketLocation("SpawnProjectileLocation");
+}
+
+void AWeapon_Base::GetSpawnRotation()
+{
 	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
 	FVector WorldPosition;
 	FVector WorldDirection;
-	FHitResult HitScreenData(ForceInit);
 
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnInfo.Owner = this;
-	SocketLocation = StaticMeshComp[0]->GetSocketLocation("SpawnProjectileLocation");;
-
-	//TODO set location and rotation here
-	if (PlayerOwner) 
+	if (PlayerOwner)
 	{
-		if (PlayerOwner->GetIsAiming()) 
+		if (PlayerOwner->GetIsAiming())
 		{
 			PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);
 			FVector EndPoint = WorldPosition + (WorldDirection * 5000);
-			FRotator SpawnRotation = UKismetMathLibrary::FindLookAtRotation(PlayerOwner->GetPawn()->GetActorLocation(), EndPoint);
-			GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SpawnRotation, SpawnInfo);
+			SocketRotation = UKismetMathLibrary::FindLookAtRotation(PlayerOwner->GetPawn()->GetActorLocation(), EndPoint);
 		}
-		else 
+		else
 		{
 			SocketRotation = StaticMeshComp[0]->GetSocketRotation("SpawnProjectileLocation");;
-			GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SocketRotation, SpawnInfo);
 		}
 	}
-	bCanFire = false;
-	GetWorldTimerManager().SetTimer(SpawnFireCoolDown, this, &AWeapon_Base::ResetCanFire, GetWeaponDelay(), true);
 }
 
-void AWeapon_Base::SERVER_SpawnProjectile_Implementation()
+void AWeapon_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot)
 {
-	SpawnProjectile();
+	SpawnProjectile(SocketLocation, SocketRotation);
 }
 
-bool AWeapon_Base::SERVER_SpawnProjectile_Validate()
+bool AWeapon_Base::SERVER_SpawnProjectile_Validate(FVector SpawnLoc, FRotator SpawnRot)
 {
 	return true;
 }

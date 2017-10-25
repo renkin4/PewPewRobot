@@ -26,7 +26,7 @@ EBTNodeResult::Type UBTTask_FindPointNearEnemy::ExecuteTask(UBehaviorTreeCompone
 	ACharacter_Base* Enemy = MyController->GetEnemy();
 	if (Enemy && MyBot)
 	{
-		const float SearchRadius = 200.0f;
+		const float SearchRadius = 300.0f;
 		const FVector SearchOrigin = Enemy->GetActorLocation() + 600.0f * (MyBot->GetActorLocation() - Enemy->GetActorLocation()).GetSafeNormal();
 		FVector RandomLocationOut;
 		const bool Loc = UNavigationSystem::K2_GetRandomReachablePointInRadius(GetWorld(), SearchOrigin, RandomLocationOut,SearchRadius);
