@@ -98,7 +98,7 @@ protected:
 	void OnKickScoreBox();
 
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_MyPlayerController, Category = "Controller")
-	APlayerController_Base* MyPlayerController;
+	APlayerController_Base* MyPlayerController = NULL;
 
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_MyPlayerState, Category = "PlayerState")
 	APlayerState_Base* MyPlayerState;

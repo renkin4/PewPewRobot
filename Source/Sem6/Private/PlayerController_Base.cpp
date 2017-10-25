@@ -4,6 +4,7 @@
 #include "Character_Base.h"
 #include "MyGameMode_Base.h"
 #include "PlayerState_Base.h"
+#include "Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
 
 
@@ -85,6 +86,28 @@ void APlayerController_Base::RespawnPlayer()
 	{
 		GM->RespawnPlayer(this);
 	}
+}
+
+AActor * APlayerController_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner);
+		return nullptr;
+	}
+
+	FTransform SpawnTM(SpawnRot, SpawnLoc);
+	AActor* Projectile = Cast<AActor>(UGameplayStatics::BeginDeferredActorSpawnFromClass(this, ProjectileToSpawn, SpawnTM));
+
+	if (Projectile)
+	{
+		Projectile->Instigator = Instigator;
+		Projectile->SetOwner(ProjOwner);
+
+		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTM);
+	}
+
+	return Projectile;
 }
 
 void APlayerController_Base::BeginPlay()
@@ -177,6 +200,17 @@ void APlayerController_Base::SetCharacterControlledYaw(bool bIsFollow)
 	}
 
 }
+
+void APlayerController_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+{
+	SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner);
+}
+
+bool APlayerController_Base::SERVER_SpawnProjectile_Validate(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+{
+	return true;
+}
+
 
 void APlayerController_Base::SERVER_RespawnPlayer_Implementation()
 {

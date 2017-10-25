@@ -168,27 +168,11 @@ void AWeapon_Base::InstantHitFire()
 
 void AWeapon_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot)
 {
-	if (Role < ROLE_Authority)
+	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
+	if (PC) 
 	{
-		SERVER_SpawnProjectile(SocketLocation, SocketRotation);
-		return;
+		PC->SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, this );
 	}
-	FTransform SpawnTM(SpawnRot, SpawnLoc);
-	AActor* Projectile = Cast<AActor>(UGameplayStatics::BeginDeferredActorSpawnFromClass(this, ProjectileToSpawn, SpawnTM));
-
-	if (Projectile)
-	{
-		Projectile->Instigator = Instigator;
-		Projectile->SetOwner(this);
-
-		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTM);
-	}
-
-	//FActorSpawnParameters SpawnInfo;
-	//SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	//SpawnInfo.Owner = this;
-
-	//GetWorld()->SpawnActor<AActor>(ProjectileToSpawn, SocketLocation, SocketRotation, SpawnInfo);
 }
 
 void AWeapon_Base::GetSpawnLocation()
@@ -215,16 +199,6 @@ void AWeapon_Base::GetSpawnRotation()
 			SocketRotation = StaticMeshComp[0]->GetSocketRotation("SpawnProjectileLocation");;
 		}
 	}
-}
-
-void AWeapon_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot)
-{
-	SpawnProjectile(SocketLocation, SocketRotation);
-}
-
-bool AWeapon_Base::SERVER_SpawnProjectile_Validate(FVector SpawnLoc, FRotator SpawnRot)
-{
-	return true;
 }
 
 void AWeapon_Base::DebugLine(FVector Start, FVector End, FColor Color)

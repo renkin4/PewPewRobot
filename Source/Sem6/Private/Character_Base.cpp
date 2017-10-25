@@ -121,14 +121,12 @@ void ACharacter_Base::BeginPlay()
 void ACharacter_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(Controller->IsA(AAIController::StaticClass()))
-		return;
-
-	SphereTraceLootable();
-	if (GetMyPlayerController()->IsValidLowLevel()) 
+	if (MyPlayerController!=NULL)
 	{
+		SphereTraceLootable();
 		bIsTargeting = GetMyPlayerController()->GetIsAiming();
 	}
+
 }
 
 // Called to bind functionality to input
@@ -451,21 +449,18 @@ void ACharacter_Base::UseLootable_Implementation()
 
 bool ACharacter_Base::SphereTraceLootable()
 {
-	FVector StaticLocation = GetActorLocation();;
-	float SphereRadius = 200.0f;
+	const FVector StaticLocation = GetActorLocation();;
+	const float SphereRadius = 200.0f;
 
 	FCollisionQueryParams TraceParams(FName(TEXT("Lootable trace")), true, NULL);
 	TraceParams.bTraceComplex = true;
 	TraceParams.bReturnPhysicalMaterial = false;
 	TraceParams.AddIgnoredActor(this);
 	
-	
 	GetWorld()->SweepMultiByChannel(LootableOutHit, StaticLocation, StaticLocation, FQuat(), ECollisionChannel::ECC_GameTraceChannel4, FCollisionShape::MakeSphere(SphereRadius), TraceParams);
-	
 
 	if (LootableOutHit.Num() > 0)
 	{
-		
 		if (bBindDynamicDoOnce) 
 		{
 			OnCollectDelegate.AddDynamic(this, &ACharacter_Base::CollectItem);

@@ -34,10 +34,6 @@ protected:
 
 	void SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot);
 
-	UFUNCTION(Server,Reliable,WithValidation)
-	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot);
-
-
 	void GetSpawnRotation();
 	void GetSpawnLocation();
 

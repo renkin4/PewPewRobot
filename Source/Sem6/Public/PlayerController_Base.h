@@ -33,6 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	void RespawnPlayer();
 
+	AActor* SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -91,4 +92,7 @@ protected:
 
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_RespawnPlayer();
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
 };
