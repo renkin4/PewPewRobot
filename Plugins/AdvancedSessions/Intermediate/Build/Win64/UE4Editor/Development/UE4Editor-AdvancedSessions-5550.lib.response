@@ -1,0 +1,14 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UE4Editor-AdvancedSessions-5550.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\Epic Games\UE_4.16\Engine\Intermediate\Build\Win64\UE4Editor\Development\Engine\SharedPCH.Engine.h.obj"
+"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSessions\Intermediate\Build\Win64\UE4Editor\Development\AdvancedSessions\Module.AdvancedSessions.cpp.obj"
+"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSessions\Intermediate\Build\Win64\UE4Editor\Development\AdvancedSessions\AdvancedSessions.generated.cpp.obj"
+"D:\Epic Games\UE_4.16\Engine\Intermediate\Build\Win64\UE4Editor\Development\AdvancedSessions\PCLaunch.rc.res"
+"D:\Epic Games\UE_4.16\Engine\Intermediate\Build\Win64\UE4Editor\Development\ModuleVersionResource.rc.inl.res"
+/OUT:"D:\UREProject\PewPewRobot\Sem6\trunk\Plugins\AdvancedSessions\Intermediate\Build\Win64\UE4Editor\Development\UE4Editor-AdvancedSessions-5550.lib"

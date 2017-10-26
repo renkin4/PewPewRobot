@@ -152,6 +152,7 @@ protected:
 	bool CanRun();
 
 	AMyBox* MyHoldingBox;
+	
 	UPROPERTY(BlueprintReadWrite, Category = "State")
 	bool bIsHoldingBox;
 	bool bIsTargeting;
@@ -218,7 +219,7 @@ protected:
 	/*Enums and Struct*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enum")
 	ECharacterState CharacterState;
-	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
+	UPROPERTY(BlueprintReadWrite, Replicated,Category = "Inventory")
 	FCharacterInvetory Inventory;
 
 	void LootableFilter();
@@ -245,6 +246,8 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Mesh")
 	void SetLootableCollision(UStaticMeshComponent* ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse);
+
+	void SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMeshComponent,ECollisionResponse ChannelResponse);
 
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_OnPunch();
@@ -282,13 +285,13 @@ protected:
 	void SetCurrentWeapon(AWeapon_Base* Weapon);
 	/*----------------------------------------------------*/
 	/*Items*/
-	void OnLootLootable(ACharacter_Base* MyCharacter);
+	void OnLootLootable(ALoot_Base* MyCharacter);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void SERVER_OnLootLootable(ACharacter_Base* MyCharacter);
+	void SERVER_OnLootLootable(ALoot_Base* MyCharacter);
 
 	UFUNCTION(NetMultiCast, Reliable)
-	void MULTICAST_OnLootLootable(ACharacter_Base* MyCharacter);
+	void MULTICAST_OnLootLootable(ALoot_Base* MyCharacter);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SERVER_UseLootable();

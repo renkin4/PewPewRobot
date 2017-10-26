@@ -155,8 +155,6 @@ void ASpawnPoint_Base::SnapBoxToTarget(ACharacter* Player, AActor* Box)
 			ShortestDistance = BoxHolderLocation[BoxHolderIndex];
 		}
 	}
-	//TODO snap to the Remaining Box
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%s"), *ShortestDistance->GetName()));
 	BoxHolderLocation.Remove(ShortestDistance);
 	OccupiedBox.Add(Cast<AMyBox>(Box));
 	SnapTargetToBoxHolderLocation(Box,ShortestDistance);

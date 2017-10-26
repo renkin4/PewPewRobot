@@ -6,11 +6,13 @@
 #include "GameFramework/Actor.h"
 #include "MyType.h"
 #include "GameplayInterface.h"
+#include "HighlightInterface.h"
 #include "MyBox.generated.h"
 
 UCLASS()
-class SEM6_API AMyBox : public AActor, 
-	public IGameplayInterface
+class SEM6_API AMyBox : public AActor,
+	public IGameplayInterface,
+	public IHighlightInterface
 {
 	GENERATED_UCLASS_BODY()
 
@@ -22,10 +24,16 @@ protected:
 
 	virtual EWeaponType GetWeaponType_Implementation() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+	virtual void HighLightActor_Implementation() override;
+	void TurnOffCustomDepth();
+	FTimerHandle TurnOffRenderCustomDepthHandle;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Mesh")
 	UStaticMeshComponent* MyBoxMesh;
 
 	ELootAbleType LootableType = ELootAbleType::LAT_Box;
+
+	
 
 public:	
 	// Called every frame

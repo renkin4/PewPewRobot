@@ -6,11 +6,13 @@
 #include "GameFramework/Actor.h"
 #include "MyType.h"
 #include "Interface/GameplayInterface.h"
+#include "HighlightInterface.h"
 #include "Weapon_Base.generated.h"
 
 UCLASS()
 class SEM6_API AWeapon_Base : public AActor,
-	public IGameplayInterface
+	public IGameplayInterface,
+	public IHighlightInterface
 {
 	GENERATED_BODY()
 	
@@ -25,6 +27,9 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
+	virtual void HighLightActor_Implementation() override;
+	void TurnOffCustomDepth();
+	FTimerHandle TurnOffRenderCustomDepthHandle;
 
 	AController* PawnOwner;
 
@@ -77,9 +82,9 @@ protected:
 
 	void DrawPredictTrajectory();
 
-	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	float ProjectileGravity = 0.1f;
-	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	float ProjectileVelocity = 1000.0f;
 public:	
 
@@ -97,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Weapon State")
 	bool CanFire() { return bCanFire; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon State")
+	float GetStaminaCost(){ return MyStats.StaminaCost; }
 private:
 	FVector2D GetScreenLocation();
 

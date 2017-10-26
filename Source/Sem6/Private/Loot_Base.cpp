@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Loot_Base.h"
-
+#include "Components/StaticMeshComponent.h"
 
 // Sets default values
 ALoot_Base::ALoot_Base(const FObjectInitializer& ObjectInitializer)
@@ -16,7 +16,22 @@ ALoot_Base::ALoot_Base(const FObjectInitializer& ObjectInitializer)
 void ALoot_Base::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	GetComponents<UStaticMeshComponent>(StaticMeshComp);
+	StaticMeshComp[0]->CustomDepthStencilValue = 1;
+}
+
+void ALoot_Base::HighLightActor_Implementation()
+{
+	if (StaticMeshComp.IsValidIndex(0))
+	{
+		StaticMeshComp[0]->SetRenderCustomDepth(true);
+		GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &ALoot_Base::TurnOffCustomDepth, 0.2f, false);
+	}
+}
+
+void ALoot_Base::TurnOffCustomDepth()
+{
+	StaticMeshComp[0]->SetRenderCustomDepth(false);
 }
 
 ELootAbleType ALoot_Base::GetLootableType_Implementation()

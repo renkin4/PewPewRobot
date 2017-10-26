@@ -1,6 +1,7 @@
 // YangIsAwesome
 
 #include "MyBox.h"
+#include "Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
 
 
@@ -26,13 +27,14 @@ AMyBox::AMyBox(const FObjectInitializer& ObjectInitializer)
 	MyBoxMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECR_Ignore);
 	MyBoxMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECR_Ignore);
 	MyBoxMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel5, ECR_Ignore);
+	MyBoxMesh->CustomDepthStencilValue = 1;
+
 }
 
 // Called when the game starts or when spawned
 void AMyBox::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 ELootAbleType AMyBox::GetLootableType_Implementation()
@@ -43,6 +45,17 @@ ELootAbleType AMyBox::GetLootableType_Implementation()
 EWeaponType AMyBox::GetWeaponType_Implementation()
 {
 	return EWeaponType::WT_None;
+}
+
+void AMyBox::HighLightActor_Implementation()
+{
+	MyBoxMesh->SetRenderCustomDepth(true);
+	GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &AMyBox::TurnOffCustomDepth, 0.2f, false);
+}
+
+void AMyBox::TurnOffCustomDepth()
+{
+	MyBoxMesh->SetRenderCustomDepth(false);
 }
 
 // Called every frame

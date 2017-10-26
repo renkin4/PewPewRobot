@@ -5,7 +5,6 @@
 #include "Components/InputComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Engine.h"
 #include "MyBlueprintFunctionLibrary.h"
 #include "MyAIController.h"
 #include "Net/UnrealNetwork.h"
@@ -17,6 +16,7 @@
 #include "Weapon_Base.h"
 #include "DamageType_Base.h"
 #include "SpawnPoint_Base.h"
+#include "HighlightInterface.h"
 
 // Sets default values
 //Constructor
@@ -56,6 +56,7 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MyPlayerController, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MaxHealth, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Health, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_None);
 }
 
 float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
@@ -472,6 +473,11 @@ bool ACharacter_Base::SphereTraceLootable()
 			OnCollectDelegate.AddDynamic(this, &ACharacter_Base::CollectItem);
 			bBindDynamicDoOnce = false;
 		}
+		IHighlightInterface* HInterface = Cast<IHighlightInterface>(GetCurrentSelectedItem().GetActor());
+		if (HInterface) 
+		{
+			HInterface->Execute_HighLightActor(GetCurrentSelectedItem().GetActor());
+		}
 		/*DEBUG*/
 		DrawSphereDebugLine(SphereRadius, StaticLocation, FColor::Red);
 		return true;
@@ -493,7 +499,7 @@ void ACharacter_Base::DrawSphereDebugLine(float Radius, FVector CenterLocation, 
 {
 	if (bEnableLootableSphere) 
 	{
-		DrawDebugSphere(GetWorld(), CenterLocation, Radius, 9, Color, false, 0.05f,0, 1.0f );
+		UKismetSystemLibrary::DrawDebugSphere(GetWorld(), CenterLocation, Radius, 9, Color, 0.05f, 1.0f );
 	}
 }
 
@@ -788,38 +794,33 @@ void ACharacter_Base::OnHoldBox()
 	CharacterState = ECharacterState::CS_Carry;
 	SetRunnning(false);
 
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(LootableOutHit[0].Actor.Get());
-
 	//TODO Change from Selection from Array % with the highest number and increment
-	MyHoldingBox = Cast<AMyBox>(LootableOutHit[0].Actor.Get());
-	MyHoldingBox->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+	MyHoldingBox = Cast<AMyBox>(GetCurrentSelectedItem().GetActor());
+	UStaticMeshComponent* StaticMeshComponent = MyHoldingBox->GetStaticMesh();
+	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentSelectedItem().GetActor());
 
 	bSetOnSimulatePhysic(MyHoldingBox , false);
+	SetOnHoldAndDropCollision(StaticMeshComponent, ECR_Ignore);
 	AttachActorToMesh(MyHoldingBox);
-	SetLootableCollision(StaticMeshComponents[0], ECollisionChannel::ECC_GameTraceChannel4, ECR_Ignore);
 
+	bIsHoldingBox = true;
+	PlayAnimationState();
 
 	if (CurrentWeapon != NULL)
 	{
 		SetWeaponVisible(CurrentWeapon, false);
 	}
-
-	bIsHoldingBox = true;
-	PlayAnimationState();
 }
 
 void ACharacter_Base::OnDropBox()
 {
 	bIsHoldingBox = false;
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-
-	MyHoldingBox->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+	UStaticMeshComponent* StaticMeshComponent = MyHoldingBox->GetStaticMesh();
 	DetachActorFromMesh(MyHoldingBox);
 	//Snap it to the Box Holder
 	if (!bIsAtBoxHolderLocation) 
 	{
-		SetLootableCollision(StaticMeshComponents[0], ECollisionChannel::ECC_GameTraceChannel4, ECR_Block);
+		SetOnHoldAndDropCollision(StaticMeshComponent,ECR_Block);
 		bSetOnSimulatePhysic(MyHoldingBox, true);
 	}
 	else 
@@ -827,15 +828,18 @@ void ACharacter_Base::OnDropBox()
 		OnSnapBoxToLocation(MyHoldingBox);
 	}
 
+	CharacterState = ECharacterState::CS_Walk;
+	PlayAnimationState();
+
 	if (CurrentWeapon != NULL)
 	{
 		//TODO set function to Set Character State
-		CharacterState = ECharacterState::CS_HoldingGun;
+		EWeaponType WeaponType;
+		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(CurrentWeapon);
+		WeaponType = GameplayInterface->Execute_GetWeaponType(CurrentWeapon);
+		PlayTypeOfWeaponAnimation(WeaponType);
 		SetWeaponVisible(CurrentWeapon, true);
 	}
-
-	CharacterState = ECharacterState::CS_Walk;
-	PlayAnimationState();
 }
 
 bool ACharacter_Base::CanLoot()
@@ -872,17 +876,17 @@ void ACharacter_Base::LootableFilter()
 {
 	if (LootableOutHit.Num() > 0)
 	{
-		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(LootableOutHit[0].Actor.Get());
+		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentSelectedItem().GetActor());
 		if (GameplayInterface)
 		{
-			ELootAbleType LootableType = GameplayInterface->Execute_GetLootableType(LootableOutHit[0].Actor.Get());
+			ELootAbleType LootableType = GameplayInterface->Execute_GetLootableType(GetCurrentSelectedItem().GetActor());
 			switch (LootableType)
 			{
 			case ELootAbleType::LAT_Weapon:
 				OnLootWeapon();
 				break;
 			case ELootAbleType::LAT_PowerUp:
-				OnLootLootable(this);
+				OnLootLootable(Cast<ALoot_Base>(GetCurrentSelectedItem().GetActor()));
 				break;
 			case ELootAbleType::LAT_Box:
 				OnHoldBox();
@@ -898,6 +902,9 @@ bool ACharacter_Base::CanFire()
 {
 	if ((CurrentWeapon != NULL || CharacterState != ECharacterState::CS_Run) && bIsHoldingBox == false)
 	{
+		if (CurrentWeapon->GetStaminaCost() > GetStaminaVal())
+			return false;
+
 		return true;
 	}
 
@@ -909,10 +916,10 @@ void ACharacter_Base::OnLootWeapon()
 	AWeapon_Base* Weapon;
 	EWeaponType WeaponType;
 	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(LootableOutHit[0].Actor.Get());
+	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentSelectedItem().GetActor());
 
 	//TODO Change from Selection from Array % with the highest number and increment
-	Weapon = Cast<AWeapon_Base>(GetCurrentSelectedItem().Actor.Get());
+	Weapon = Cast<AWeapon_Base>(GetCurrentSelectedItem().GetActor());
 	WeaponType = GameplayInterface->Execute_GetWeaponType(Weapon);
 	Weapon->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
 
@@ -920,8 +927,8 @@ void ACharacter_Base::OnLootWeapon()
 	Inventory.Weapon.Add(Weapon);
 	SetCurrentWeapon(Weapon);
 
+	SetOnHoldAndDropCollision(StaticMeshComponents[0], ECR_Ignore);
 	AttachActorToMesh(Weapon);
-	SetLootableCollision(StaticMeshComponents[0], ECollisionChannel::ECC_GameTraceChannel4, ECR_Ignore);
 
 	PlayTypeOfWeaponAnimation(WeaponType);
 	
@@ -1003,6 +1010,14 @@ void ACharacter_Base::SetLootableCollision(UStaticMeshComponent * ActorComponent
 	{
 		MULTICAST_SetCollision(ActorComponentToSet, SetChannel, ChannelResponse);
 	}
+}
+
+void ACharacter_Base::SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMeshComponent, ECollisionResponse ChannelResponse)
+{
+	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_GameTraceChannel4, ChannelResponse);
+	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_WorldDynamic, ChannelResponse);
+	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_WorldStatic, ChannelResponse);
+	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_Visibility, ChannelResponse);
 }
 
 void ACharacter_Base::OnDeathNotifyTimerRespawn()
@@ -1110,29 +1125,28 @@ void ACharacter_Base::SetCurrentWeapon(AWeapon_Base* Weapon)
 	CurrentWeapon = Weapon;
 }
 
-void ACharacter_Base::OnLootLootable(ACharacter_Base* MyCharacter)
+void ACharacter_Base::OnLootLootable(ALoot_Base* LootableItem)
 {
 	if (Role < ROLE_Authority) 
 	{
-		SERVER_OnLootLootable(this);
+		SERVER_OnLootLootable(LootableItem);
 		return;
 	}
-	MULTICAST_OnLootLootable(MyCharacter);
+	Inventory.PowerUp.Add(LootableItem->GetClass());
+	MULTICAST_OnLootLootable(LootableItem);
 }
 
-void ACharacter_Base::MULTICAST_OnLootLootable_Implementation(ACharacter_Base* MyCharacter)
+void ACharacter_Base::MULTICAST_OnLootLootable_Implementation(ALoot_Base* LootableItem)
 {
-	ALoot_Base* LootableItem = Cast<ALoot_Base>(GetCurrentSelectedItem().Actor.Get());
-	Inventory.PowerUp.Add(LootableItem->GetClass());
 	LootableItem->OnPickUp();
 }
 
-void ACharacter_Base::SERVER_OnLootLootable_Implementation(ACharacter_Base* MyCharacter)
+void ACharacter_Base::SERVER_OnLootLootable_Implementation(ALoot_Base* LootableItem)
 {
-	OnLootLootable(MyCharacter);
+	OnLootLootable(LootableItem);
 }
 
-bool ACharacter_Base::SERVER_OnLootLootable_Validate(ACharacter_Base* MyCharacter)
+bool ACharacter_Base::SERVER_OnLootLootable_Validate(ALoot_Base* LootableItem)
 {
 	return true;
 }

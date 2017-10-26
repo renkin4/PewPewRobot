@@ -30,7 +30,7 @@ void AWeapon_Base::BeginPlay()
 {
 	Super::BeginPlay();
 	GetComponents<UStaticMeshComponent>(StaticMeshComp);
-	
+	StaticMeshComp[0]->CustomDepthStencilValue = 1;
 }
 
 // Called every frame
@@ -52,6 +52,20 @@ void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 }
 
+void AWeapon_Base::HighLightActor_Implementation()
+{
+	if (StaticMeshComp.IsValidIndex(0)) 
+	{
+		StaticMeshComp[0]->SetRenderCustomDepth(true);
+		GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &AWeapon_Base::TurnOffCustomDepth, 0.2f, false);
+	}
+}
+
+void AWeapon_Base::TurnOffCustomDepth()
+{
+	StaticMeshComp[0]->SetRenderCustomDepth(false);
+}
+
 void AWeapon_Base::ResetCanFire()
 {
 	bCanFire = true;
@@ -65,23 +79,22 @@ void AWeapon_Base::DrawPredictTrajectory()
 	/*Predict Trajectory*/
 	FVector CurrentVel = (ProjectileVelocity * UKismetMathLibrary::GetForwardVector(SocketRotation));
 	const float GravityZ = GetWorld()->GetDefaultGravityZ()*ProjectileGravity;
-	const float ProjectileRadius = 20.0f;
-	float CurrentTime = 0.f;
+	float CurrentTime = 0.0f;
 	FVector TraceStart = TempLocation;
 	FVector TraceEnd = TraceStart;
 	const float MaxSimTime = 5.0f;
-	const float SimFrequency = 5.0f;
+	const float SimFrequency = 4.0f;
 	const float SubstepDeltaTime = 1.0f / SimFrequency;
 	TArray<FVector> PathSeg;
 	PathSeg.Add(TempLocation);
 	while (CurrentTime < MaxSimTime)
 	{
 		const float ActualStepDeltaTime = FMath::Min(MaxSimTime - CurrentTime, SubstepDeltaTime);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f"), ActualStepDeltaTime));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f"), ActualStepDeltaTime));
 		CurrentTime += ActualStepDeltaTime;
 		FVector OldVelocity = CurrentVel;
-		TraceStart = TraceEnd;
 		CurrentVel = OldVelocity + FVector(0.f, 0.f, GravityZ * ActualStepDeltaTime);
+		TraceStart = TraceEnd;
 		TraceEnd = TraceStart + (OldVelocity + CurrentVel) * (0.5f * ActualStepDeltaTime);
 		PathSeg.Add(TraceEnd);
 	}
@@ -106,11 +119,14 @@ EWeaponType AWeapon_Base::GetWeaponType_Implementation()
 
 void AWeapon_Base::FireWeapon()
 {
-	FilterFireType();
 	ACharacter_Base* CharOwner = Cast<ACharacter_Base>(PawnOwner->GetPawn());
 	if (CharOwner) 
 	{
-		CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost);
+		if (CharOwner->GetStaminaVal() >= GetStaminaCost())
+		{
+			CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost);
+			FilterFireType();
+		}
 	}
 	//TODO Simulate Particle and sound
 	//TODO Set EditAnywhere for Particle And sound
