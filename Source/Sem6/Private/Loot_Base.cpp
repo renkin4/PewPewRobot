@@ -25,7 +25,7 @@ void ALoot_Base::HighLightActor_Implementation()
 	if (StaticMeshComp.IsValidIndex(0))
 	{
 		StaticMeshComp[0]->SetRenderCustomDepth(true);
-		GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &ALoot_Base::TurnOffCustomDepth, 0.2f, false);
+		GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &ALoot_Base::TurnOffCustomDepth, 0.1f, false);
 	}
 }
 

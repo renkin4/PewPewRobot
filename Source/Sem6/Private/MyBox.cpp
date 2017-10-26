@@ -50,7 +50,7 @@ EWeaponType AMyBox::GetWeaponType_Implementation()
 void AMyBox::HighLightActor_Implementation()
 {
 	MyBoxMesh->SetRenderCustomDepth(true);
-	GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &AMyBox::TurnOffCustomDepth, 0.2f, false);
+	GetWorldTimerManager().SetTimer(TurnOffRenderCustomDepthHandle, this, &AMyBox::TurnOffCustomDepth, 0.1f, false);
 }
 
 void AMyBox::TurnOffCustomDepth()
