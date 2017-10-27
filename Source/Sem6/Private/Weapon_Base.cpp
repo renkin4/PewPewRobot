@@ -124,7 +124,7 @@ void AWeapon_Base::FireWeapon()
 	{
 		if (CharOwner->GetStaminaVal() >= GetStaminaCost())
 		{
-			CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost);
+			CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost, true);
 			FilterFireType();
 		}
 	}

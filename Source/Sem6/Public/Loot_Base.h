@@ -29,7 +29,7 @@ protected:
 	FTimerHandle TurnOffRenderCustomDepthHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
-	FLootableStruct LootableInfomation;
+	FItemToSellInfo LootableInfomation;
 
 	TArray<UStaticMeshComponent*> StaticMeshComp;
 

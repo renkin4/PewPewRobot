@@ -87,6 +87,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
 	float ProjectileVelocity = 1000.0f;
 public:	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
+	FItemToSellInfo WeaponInfomation;
 
 	virtual ELootAbleType GetLootableType_Implementation() override;
 

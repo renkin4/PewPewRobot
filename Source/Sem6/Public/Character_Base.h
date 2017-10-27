@@ -106,8 +106,12 @@ protected:
 	UFUNCTION()
 	void OnRep_MyPlayerController();
 	/*Stamina // Mana*/
+	UPROPERTY(ReplicatedUsing = OnRep_Stamina)
 	float Stamina;
 	float MaxStamina;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Stamina")
+	void OnRep_Stamina();
 
 	UPROPERTY(BlueprintReadWrite, Category = "Stamina")
 	float AsthethicStaminaVal;
@@ -117,11 +121,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Stamina")
 	float RegenRate = 100.0f;
 
-	bool bShouldRegenHealth;
+	bool bShouldRegenStamina;
 
 	void RegenStamina();
 	void TriggerRegenStamina();
 	FTimerHandle DelayStaminaRegenHandle;
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetStaminaVal(float NewVal);
 	/*----------------------------------------------------*/
 	/*Health*/
 	bool bDie;
@@ -362,5 +369,6 @@ public:
 	float GetMaxStaminaVal() { return MaxStamina; }
 
 	UFUNCTION(BlueprintCallable, Category = "Stamina")
-	float SetStamina(float StaminaVal);
+	float SetStamina(float StaminaVal, bool DrainStamina);
+
 };

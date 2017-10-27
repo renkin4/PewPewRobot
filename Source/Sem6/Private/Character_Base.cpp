@@ -41,7 +41,7 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	SelectedItemIndex = 0;
 	MaxStamina = 100.0f;
 	Stamina = MaxStamina;
-	bShouldRegenHealth = false;
+	bShouldRegenStamina = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -57,6 +57,7 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MaxHealth, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Health, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, Stamina, COND_None);
 }
 
 float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
@@ -127,13 +128,13 @@ void ACharacter_Base::BeginPlay()
 void ACharacter_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (MyPlayerController!=NULL)
+	if (MyPlayerController!=NULL  && GetController()->IsLocalController())
 	{
 		SphereTraceLootable();
 		bIsTargeting = GetMyPlayerController()->GetIsAiming();
 		RegenStamina();
 	}
-
+	
 }
 
 // Called to bind functionality to input
@@ -609,23 +610,39 @@ void ACharacter_Base::OnRep_MyPlayerController()
 {
 }
 
+void ACharacter_Base::OnRep_Stamina_Implementation()
+{
+
+}
+
 void ACharacter_Base::RegenStamina()
 {
-	if (bShouldRegenHealth) 
+	if (bShouldRegenStamina) 
 	{
-		Stamina += GetWorld()->GetDeltaSeconds() * RegenRate;
+		SetStamina(GetStaminaVal() + (GetWorld()->GetDeltaSeconds() * RegenRate), false);
+		//Stamina += GetWorld()->GetDeltaSeconds() * RegenRate;
 		//stop Regen if over MaxStamina
-		if (Stamina >= MaxStamina)
+		if (GetStaminaVal() >= MaxStamina)
 		{
-			Stamina = MaxStamina;
-			bShouldRegenHealth = false;
+			SetStamina(MaxStamina, false);
+			bShouldRegenStamina = false;
 		}
 	}
 }
 
 void ACharacter_Base::TriggerRegenStamina()
 {
-	bShouldRegenHealth = true;
+	bShouldRegenStamina = true;
+}
+
+void ACharacter_Base::SERVER_SetStaminaVal_Implementation(float NewVal)
+{
+	SetStamina(NewVal, false);
+}
+
+bool ACharacter_Base::SERVER_SetStaminaVal_Validate(float NewVal)
+{
+	return true;
 }
 
 void ACharacter_Base::OnRep_MyPlayerState()
@@ -633,16 +650,24 @@ void ACharacter_Base::OnRep_MyPlayerState()
 	UpdateColor(MyPlayerState, GetMesh());
 }
 
-float ACharacter_Base::SetStamina(float StaminaVal)
+float ACharacter_Base::SetStamina(float StaminaVal, bool DrainStamina)
 {
+	if (DrainStamina)
+	{
+		bShouldRegenStamina = false;
+		GetWorldTimerManager().SetTimer(DelayStaminaRegenHandle, this, &ACharacter_Base::TriggerRegenStamina, DelayBeforeRegenStamina, false);
+	}
+	if (Role < ROLE_Authority)
+	{
+		SERVER_SetStaminaVal(StaminaVal);
+		return StaminaVal;
+	}
 	Stamina = StaminaVal;
-	GetWorldTimerManager().SetTimer(DelayStaminaRegenHandle, this, &ACharacter_Base::TriggerRegenStamina, DelayBeforeRegenStamina, false);
 
 	if (Stamina < 0.0f)
-	{
 		Stamina = 0.0f;
-	}
-	bShouldRegenHealth = false;
+
+	OnRep_Stamina();
 	return Stamina;
 }
 
@@ -924,7 +949,7 @@ void ACharacter_Base::OnLootWeapon()
 	Weapon->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
 
 	Weapon->SetPawnOwner(GetController());
-	Inventory.Weapon.Add(Weapon);
+	Inventory.Weapon.Add(Weapon->GetClass());
 	SetCurrentWeapon(Weapon);
 
 	SetOnHoldAndDropCollision(StaticMeshComponents[0], ECR_Ignore);

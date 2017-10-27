@@ -58,7 +58,7 @@ struct FCharacterInvetory
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	TArray<AActor*> Weapon;
+	TArray<TSubclassOf<AActor>> Weapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<TSubclassOf<AActor>> PowerUp;
@@ -67,7 +67,7 @@ struct FCharacterInvetory
 
 
 USTRUCT(BlueprintType)
-struct FLootableStruct
+struct FItemToSellInfo
 {
 	GENERATED_BODY()
 
