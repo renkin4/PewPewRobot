@@ -3,6 +3,7 @@
 #include "PlayerController_Base.h"
 #include "Character_Base.h"
 #include "MyGameMode_Base.h"
+#include "MyGameState_Base.h"
 #include "PlayerState_Base.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -167,7 +168,7 @@ void APlayerController_Base::AimTimelineFloatReturn(float val)
 
 		SpringArmComp[0]->TargetArmLength = FMath::Lerp(
 			SpringArmDefaultRelativeArmLength,
-			SpringArmComp[0]->TargetArmLength * SpringAimLengthModifier,
+			0.0f,
 			val);
 
 		SpringArmComp[0]->SetRelativeLocation(FMath::Lerp(
@@ -201,6 +202,145 @@ void APlayerController_Base::SetCharacterControlledYaw(bool bIsFollow)
 		CLIENT_SetCharacterControlledYaw(bIsFollow);
 	}
 
+}
+
+void APlayerController_Base::OnLeaveTeam(uint8 TeamNum)
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_OnLeaveTeam(TeamNum);
+		return;
+	}
+	UWorld* World = GetWorld();
+	AMyGameState_Base* GS = Cast<AMyGameState_Base>(World->GetGameState());
+	if (GS) 
+	{
+		GS->OnLeaveTeam(TeamNum);
+	}
+}
+
+void APlayerController_Base::SetReady(bool bShouldReady)
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_SetReady(bShouldReady);
+		return;
+	}
+	APlayerState_Base* PState = Cast<APlayerState_Base>(GetPlayerState());
+	if (PState) 
+	{
+		PState->SetPlayerReady(bShouldReady);
+	}
+}
+
+void APlayerController_Base::SERVER_SetReady_Implementation(bool bShouldReady)
+{
+	SetReady(bShouldReady);
+}
+
+bool APlayerController_Base::SERVER_SetReady_Validate(bool bShouldReady)
+{
+	return true;
+}
+
+void APlayerController_Base::SERVER_OnLeaveTeam_Implementation(uint8 TeamNum)
+{
+	OnLeaveTeam(TeamNum);
+}
+
+bool APlayerController_Base::SERVER_OnLeaveTeam_Validate(uint8 TeamNum)
+{
+	return true;
+}
+
+void APlayerController_Base::DelayOnUpdateSelectionUI()
+{
+	UWorld* World = GetWorld();
+	AMyGameState_Base* GS = Cast<AMyGameState_Base>(World->GetGameState());
+	TArray<APlayerState*> PS;
+	APlayerState_Base* PStateBase;
+	if (GS)
+	{
+		PS = GS->PlayerArray;
+		for (APlayerState* PState : PS) 
+		{
+			PStateBase = Cast<APlayerState_Base>(PState);
+			/*Updating UI Selection by passing same team num*/
+			GS->OnJoinTeam(PStateBase, PStateBase->GetTeamNum());
+		}
+	}
+}
+
+void APlayerController_Base::SERVER_UpdateSelectionUI_Implementation()
+{
+	UpdateSelectionUI();
+}
+
+bool APlayerController_Base::SERVER_UpdateSelectionUI_Validate()
+{
+	return true;
+}
+
+void APlayerController_Base::UpdateSelectionUI()
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_UpdateSelectionUI();
+		return;
+	}
+	GetWorldTimerManager().SetTimer(DelayOnUpdateSelectionUIHandle, this, &APlayerController_Base::DelayOnUpdateSelectionUI, 0.5f, false);
+}
+
+void APlayerController_Base::UpdateReadyStatus()
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_UpdateReadyStatus();
+		return;
+	}
+	UWorld* World = GetWorld();
+	AMyGameState_Base* GS = Cast<AMyGameState_Base>(World->GetGameState());
+	APlayerState_Base* PS = Cast<APlayerState_Base>(GetPlayerState());
+	if (GS && PS)
+	{
+		GS->UpdateReadyStatus(PS);
+	}
+}
+
+void APlayerController_Base::OnJoinTeam(uint8 TeamNum)
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_OnJoinTeam(TeamNum);
+		return;
+	}
+	UWorld* World = GetWorld();
+	AMyGameState_Base* GS = Cast<AMyGameState_Base>(World->GetGameState());
+	APlayerState_Base* PStateBase = Cast<APlayerState_Base>(GetPlayerState());
+	if (GS && PStateBase)
+	{
+		GS->OnJoinTeam(PStateBase, TeamNum);
+	}
+}
+
+void APlayerController_Base::SERVER_OnJoinTeam_Implementation(uint8 TeamNum)
+{
+	OnJoinTeam(TeamNum);
+}
+
+bool APlayerController_Base::SERVER_OnJoinTeam_Validate(uint8 TeamNum)
+{
+	return true;
+}
+
+void APlayerController_Base::SERVER_UpdateReadyStatus_Implementation()
+{
+	UpdateReadyStatus();
+}
+
+bool APlayerController_Base::SERVER_UpdateReadyStatus_Validate()
+{
+	return true;
 }
 
 void APlayerController_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)

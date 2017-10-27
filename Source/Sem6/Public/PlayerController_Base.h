@@ -34,6 +34,25 @@ public:
 	void RespawnPlayer();
 
 	AActor* SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
+
+	/*Lobby*/
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void UpdateSelectionUI();
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void UpdateReadyStatus();
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void OnJoinTeam(uint8 TeamNum);
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void OnLeaveTeam(uint8 TeamNum);
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void SetReady(bool bShouldReady);
+
+	/*---------------------------------------------*/
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -73,27 +92,47 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Aiming")
 	float SpringAimLengthModifier;
-
+	
 	FVector SpringArmDefaultRelativeLocation;
 	float SpringArmDefaultRelativeArmLength;
 	void SetCharacterControlledYaw(bool bIsFollow);
-
+	
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_SetCharacterControlledYaw(bool bIsFollow, ACharacter* CharacterOwner);
 
 	UFUNCTION(Client, Reliable)
 	void CLIENT_SetCharacterControlledYaw(bool bIsFollow);
-
+	/*---------------------------------------------*/
 	/** Holding the current Character for the controller */
 	ACharacter* MyCharacter;
-
+	/*---------------------------------------------*/
 	TArray<USpringArmComponent*> SpringArmComp;
 	TArray<UChildActorComponent*> ZoomLocation;
-
+	/*---------------------------------------------*/
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_RespawnPlayer();
-
+	/*---------------------------------------------*/
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
+	/*---------------------------------------------*/
+	/*Lobby*/
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_UpdateSelectionUI();
 
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_UpdateReadyStatus();
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_OnJoinTeam(uint8 TeamNum);
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_OnLeaveTeam(uint8 TeamNum);
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetReady(bool bShouldReady);
+
+	void DelayOnUpdateSelectionUI();
+
+	FTimerHandle DelayOnUpdateSelectionUIHandle;
+	/*---------------------------------------------*/
 };

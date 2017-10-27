@@ -21,8 +21,14 @@ APlayerState_Base::APlayerState_Base(const FObjectInitializer& ObjectInitializer
 	NumDeaths = 0;
 	NumBulletsFired = 0;
 	NumRocketsFired = 0;
+	bPlayerIsReady = false;
 	bQuitter = false;
 	PlayerStartLocation = NULL;
+}
+
+void APlayerState_Base::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void APlayerState_Base::Reset()
@@ -49,20 +55,15 @@ void APlayerState_Base::UnregisterPlayerWithSession()
 void APlayerState_Base::ClientInitialize(AController* InController)
 {
 	Super::ClientInitialize(InController);
-
-	UpdateTeamColors();
 }
 
 void APlayerState_Base::SetTeamNum(uint8 NewTeamNumber)
 {
 	TeamNumber = NewTeamNumber;
-
-	UpdateTeamColors();
 }
 
-void APlayerState_Base::OnRep_TeamColor()
+void APlayerState_Base::OnRep_TeamNumber()
 {
-	UpdateTeamColors();
 }
 
 void APlayerState_Base::AddBulletsFired(int32 NumBullets)
@@ -130,18 +131,10 @@ float APlayerState_Base::GetPlayerCurrency()
 	return PlayerCurrency;
 }
 
-void APlayerState_Base::UpdateTeamColors()
+bool APlayerState_Base::SetPlayerReady(bool bShouldReady)
 {
-	AController* OwnerController = Cast<AController>(GetOwner());
-	if (OwnerController != NULL)
-	{
-		ACharacter_Base* CharacterBase = Cast<ACharacter_Base>(OwnerController->GetCharacter());
-		if (CharacterBase != NULL)
-		{
-			//TODO Update Colors
-			//CharacterBase->UpdateTeamColorsAllMIDs();
-		}
-	}
+	bPlayerIsReady = bShouldReady;
+	return bShouldReady;
 }
 
 uint8 APlayerState_Base::GetTeamNum() const
@@ -298,6 +291,8 @@ void APlayerState_Base::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > &
 	DOREPLIFETIME(APlayerState_Base, MyController);
 	DOREPLIFETIME(APlayerState_Base, PlayerScore);
 	DOREPLIFETIME(APlayerState_Base, PlayerCurrency);
+	DOREPLIFETIME(APlayerState_Base, bPlayerIsReady);
+
 }
 
 FString APlayerState_Base::GetShortPlayerName() const

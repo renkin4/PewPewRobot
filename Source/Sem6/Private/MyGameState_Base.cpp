@@ -10,12 +10,6 @@ AMyGameState_Base::AMyGameState_Base(const FObjectInitializer& ObjectInitializer
 	WiningScore = 50.0f;
 }
 
-void AMyGameState_Base::MULTICAST_PlaySoundAtLocation_Implementation(USoundBase * Sound, FVector Location, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, USoundConcurrency * ConcurrencySettings)
-{
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, Location, VolumeMultiplier, PitchMultiplier, StartTime, AttenuationSettings, ConcurrencySettings);
-	return;
-}
-
 void AMyGameState_Base::CheckScore_Implementation()
 {
 	TArray<APlayerState*> PArray = PlayerArray;
@@ -53,4 +47,56 @@ void AMyGameState_Base::DestroyingActor_Implementation(AActor * ActorToDestroy)
 	{
 		MULTICAST_DestroyActor(ActorToDestroy);
 	}
+}
+
+void AMyGameState_Base::OnJoinTeam(APlayerState_Base* PS, uint8 TeamToJoin)
+{
+	PS->SetTeamNum(TeamToJoin);
+	MULTICAST_OnJoinTeam(PS, TeamToJoin);
+}
+
+bool AMyGameState_Base::UpdateReadyStatus(APlayerState_Base* PS)
+{
+	MULTICAST_UpdateReadyStatus(PS);
+	return PS->GetIsPlayerReady();
+}
+
+void AMyGameState_Base::OnLeaveTeam(uint8 TeamNum)
+{
+	MULTICAST_OnLeaveTeam(TeamNum);
+}
+
+bool AMyGameState_Base::CheckEveryoneReady(APlayerState_Base* ServerPS)
+{
+	bool bIsEveryoneReady = true;
+	TArray<APlayerState*> PSArray = PlayerArray;
+	APlayerState_Base* PS;
+	for (APlayerState* PState: PSArray)
+	{
+		PS = Cast<APlayerState_Base>(PState);
+		if (PS && PS != ServerPS) 
+		{
+			if (!PS->GetIsPlayerReady())
+			{
+				bIsEveryoneReady = PS->GetIsPlayerReady();
+				break;
+			}
+		}
+	}
+	return bIsEveryoneReady;
+}
+
+void AMyGameState_Base::MULTICAST_OnLeaveTeam_Implementation(uint8 TeamNum)
+{
+	DelegateLeaveTeam.Broadcast(TeamNum);
+}
+
+void AMyGameState_Base::MULTICAST_UpdateReadyStatus_Implementation(APlayerState_Base* PS)
+{
+	UpdateRSDelegate.Broadcast(PS);
+}
+
+void AMyGameState_Base::MULTICAST_OnJoinTeam_Implementation(APlayerState_Base* PS, uint8 TeamToJoin)
+{
+	DelegateJoinTeam.Broadcast(PS,TeamToJoin);
 }

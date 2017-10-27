@@ -46,7 +46,7 @@ public:
 	// End APlayerState interface
 
 	/**
-	* Set new team and update pawn. Also updates player character team colors.
+	* Set new team and update pawn.
 	*
 	* @param	NewTeamNumber	Team we want to be on.
 	*/
@@ -92,9 +92,8 @@ public:
 	UFUNCTION(Reliable, NetMulticast)
 	void BroadcastDeath(class APlayerState_Base* KillerPlayerState, const UDamageType* KillerDamageType, class APlayerState_Base* KilledPlayerState);
 
-	/** replicate team colors. Updated the players mesh colors appropriately */
 	UFUNCTION()
-	void OnRep_TeamColor();
+	void OnRep_TeamNumber();
 
 	//We don't need stats about amount of ammo fired to be server authenticated, so just increment these with local functions
 	void AddBulletsFired(int32 NumBullets);
@@ -125,18 +124,27 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Currency")
 	float GetPlayerCurrency();
+	/*Lobby*/
+	UFUNCTION(BlueprintPure, Category = "Lobby")
+	bool GetIsPlayerReady() { return bPlayerIsReady; }
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	bool SetPlayerReady(bool bShouldReady);
+	/*-----------------------------------*/
 protected:
+	virtual void BeginPlay() override;
+
+	UPROPERTY(Replicated)
+	bool bPlayerIsReady;
+
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerScore)
 	float PlayerScore;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerCurrency)
 	float PlayerCurrency;
 
-	/** Set the mesh colors based on the current teamnum variable */
-	void UpdateTeamColors();
-
 	/** team number */
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_TeamColor)
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_TeamNumber)
 	uint8 TeamNumber;
 
 	/** number of kills */

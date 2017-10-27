@@ -8,6 +8,7 @@
 #include "PlayerState_Base.h"
 #include "SpawnPoint_Base.h"
 #include "MyPlayerStart_Base.h"
+#include "MyGameState_Base.h"
 #include "PlayerController_Base.h"
 #include "Runtime/Engine/Public/EngineUtils.h"
 #include "MyBox.h"
@@ -81,6 +82,7 @@ void AMyGameMode_Base::PostLogin(APlayerController * NewPlayer)
 {
 	APlayerController_Base* PC = Cast<APlayerController_Base>(NewPlayer); 
 	APlayerState_Base* PState;
+	AMyGameState_Base* GS = Cast<AMyGameState_Base>(GetWorld()->GetGameState());
 	uint8 TeamNumHolder;
 	if (PC) 
 	{
@@ -89,14 +91,18 @@ void AMyGameMode_Base::PostLogin(APlayerController * NewPlayer)
 		{
 			if (HasMatchStarted()) 
 			{
+				//TODO On Drop In Player
 				ChangeSpawnColor(PState);
 			}
 			TeamNumHolder = GetTeamID() + 1;
 			SetTeamID(TeamNumHolder);
 			PState->SetTeamNum(TeamNumHolder);
 			PState->SetMyController(PC);
+			/*Pass in Information To Update Everyone*/
+			PC->UpdateSelectionUI();
 		}
 	}
+	
 	Super::PostLogin(NewPlayer);
 }
 
