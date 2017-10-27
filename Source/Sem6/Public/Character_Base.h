@@ -238,6 +238,7 @@ protected:
 	void OnLootWeapon();
 	void OnPunch();
 	void OnPunchNotify();
+	bool bIsPunching;
 	
 	UPROPERTY(EditAnywhere, Category = "Damage")
 	TSubclassOf<UDamageType> OnePunchDamageClass;

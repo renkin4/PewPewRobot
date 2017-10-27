@@ -42,6 +42,8 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	MaxStamina = 100.0f;
 	Stamina = MaxStamina;
 	bShouldRegenStamina = false;
+	bIsPunching = false;
+
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -247,6 +249,8 @@ void ACharacter_Base::OnScore()
 
 void ACharacter_Base::OnFire()
 {
+	SetRunnning(false);
+
 	if (CurrentWeapon == NULL)
 	{
 		OnPunch();
@@ -687,7 +691,7 @@ void ACharacter_Base::OnDeathNotify_Implementation()
 
 bool ACharacter_Base::CanRun()
 {
-	if (bIsHoldingBox || bIsTargeting || Stamina <= 0.0f)
+	if (bIsPunching || bIsHoldingBox || bIsTargeting || Stamina <= 0.0f)
 	{
 		return false;
 	}
@@ -961,22 +965,25 @@ void ACharacter_Base::OnLootWeapon()
 
 void ACharacter_Base::OnPunch()
 {
+	bIsPunching = true;
+	TArray<FAnimNotifyEvent> StartPunchNotify = PunchingMontage->Notifies;
+	GetWorldTimerManager().SetTimer(PunchingHandler, this, &ACharacter_Base::OnPunchNotify, StartPunchNotify[0].GetTriggerTime(), false);
 	if (Role < ROLE_Authority) 
 	{
 		SERVER_OnPunch();
+		return;
 	}
-	else 
-	{
-		CharacterState = ECharacterState::CS_Punching;
-		PlayAnimationState();
+	CharacterState = ECharacterState::CS_Punching;
+	PlayAnimationState();
 
-		TArray<FAnimNotifyEvent> StartPunchNotify = PunchingMontage->Notifies;
-		GetWorldTimerManager().SetTimer(PunchingHandler, this, &ACharacter_Base::OnPunchNotify, StartPunchNotify[0].GetTriggerTime(), false);
-	}
+	//TArray<FAnimNotifyEvent> StartPunchNotify = PunchingMontage->Notifies;
+	//GetWorldTimerManager().SetTimer(PunchingHandler, this, &ACharacter_Base::OnPunchNotify, StartPunchNotify[0].GetTriggerTime(), false);
+	
 }
 
 void ACharacter_Base::OnPunchNotify()
 {
+	bIsPunching = false;
 	//TODO Deal Damage here
 	FVector StartPoint = this->GetActorLocation();
 	FVector EndPoint = StartPoint + (GetActorForwardVector() * 150);
