@@ -79,6 +79,14 @@ protected:
 
 	void ResetCanFire();
 	/*Trajectory*/
+	/*Iteration Control*/
+	float ElapsedTime = 0.0f;
+	float RealDesiredFPS;
+
+	/**FrameRate Persec**/
+	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
+	float DesiredFrameRatePS = 15.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
 	bool bShowTrajectory;
 	UPROPERTY(EditAnywhere, Category = "Trajectory")

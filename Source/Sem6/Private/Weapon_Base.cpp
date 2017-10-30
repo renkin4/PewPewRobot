@@ -33,6 +33,8 @@ void AWeapon_Base::BeginPlay()
 	Super::BeginPlay();
 	GetComponents<UStaticMeshComponent>(StaticMeshComp);
 	StaticMeshComp[0]->CustomDepthStencilValue = 1;
+	RealDesiredFPS = 1.0f / DesiredFrameRatePS;
+
 }
 
 // Called every frame
@@ -40,13 +42,20 @@ void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
-	if (PC)
+	/*Iteration Control*/
+	ElapsedTime += DeltaTime;
+	if (ElapsedTime >= RealDesiredFPS)
 	{
-		if (bShowTrajectory && PC->GetIsAiming())
+		if (PC)
 		{
-			DrawPredictTrajectory();
+			if (bShowTrajectory && PC->GetIsAiming())
+			{
+				DrawPredictTrajectory();
+			}
 		}
+		ElapsedTime -= RealDesiredFPS;
 	}
+	/*---------------*/
 }
 
 void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -114,7 +123,7 @@ void AWeapon_Base::DrawPredictTrajectory()
 			TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryShapeParticle, CurrentPathSegTransform, true);
 			if (TrajectoryPathSegPS) 
 			{
-				TrajectoryPathSegPS->SetRelativeRotation(PathSegRotation);
+				TrajectoryPathSegPS->SetWorldRotation(PathSegRotation);
 			}
 		}
 		else 
