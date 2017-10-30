@@ -47,6 +47,7 @@ void APlayerController_Base::ProcessPlayerInput(const float DeltaTime, const boo
 
 void APlayerController_Base::Possess(APawn * InPawn)
 {
+	EnableCheats();
 	Super::Possess(InPawn);
 	OnPossessEvent(InPawn);
 	ACharacter_Base* MyChar = Cast<ACharacter_Base>(InPawn);

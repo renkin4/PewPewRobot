@@ -44,7 +44,6 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	bShouldRegenStamina = false;
 	bIsPunching = false;
 
-
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 }
@@ -60,13 +59,14 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Health, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Stamina, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, bStaminaCheatEnabled, COND_None);
 }
 
 float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
 {
 	float ActualDamage;
 	//IgnoreOnDeath
-	if (bIsDying)
+	if (bIsDying||!bCanBeDamaged)
 	{
 		Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 		return 0.0f;
@@ -253,7 +253,8 @@ void ACharacter_Base::OnFire()
 
 	if (CurrentWeapon == NULL)
 	{
-		OnPunch();
+		if(CanFire())
+			OnPunch();
 		return;
 	}
 
@@ -656,11 +657,20 @@ void ACharacter_Base::OnRep_MyPlayerState()
 
 float ACharacter_Base::SetStamina(float StaminaVal, bool DrainStamina)
 {
+	/*Cheating*/
+	if (bStaminaCheatEnabled) 
+	{
+		Stamina = 100.0f;
+		return Stamina;
+	}
+	/*-------------*/
+	/*Happen Locally*/
 	if (DrainStamina)
 	{
 		bShouldRegenStamina = false;
 		GetWorldTimerManager().SetTimer(DelayStaminaRegenHandle, this, &ACharacter_Base::TriggerRegenStamina, DelayBeforeRegenStamina, false);
 	}
+	/*-------------*/
 	if (Role < ROLE_Authority)
 	{
 		SERVER_SetStaminaVal(StaminaVal);
@@ -929,11 +939,13 @@ void ACharacter_Base::LootableFilter()
 
 bool ACharacter_Base::CanFire()
 {
-	if ((CurrentWeapon != NULL || CharacterState != ECharacterState::CS_Run) && bIsHoldingBox == false)
+	if (CurrentWeapon != NULL || !bIsRunning || !bIsHoldingBox)
 	{
-		if (CurrentWeapon->GetStaminaCost() > GetStaminaVal())
-			return false;
-
+		if (CurrentWeapon->IsValidLowLevel()) 
+		{
+			if (CurrentWeapon->GetStaminaCost() > GetStaminaVal())
+				return false;
+		}
 		return true;
 	}
 

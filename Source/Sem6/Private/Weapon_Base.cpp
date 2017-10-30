@@ -3,11 +3,12 @@
 #include "Weapon_Base.h"
 #include "MyBlueprintFunctionLibrary.h"
 #include "DrawDebugHelpers.h"
-#include "Components/StaticMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "PlayerController_Base.h"
-#include "Kismet/GameplayStatics.h"
+#include "Projectile_Base.h"
 #include "Character_Base.h"
+#include "Components/StaticMeshComponent.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
@@ -75,6 +76,8 @@ void AWeapon_Base::DrawPredictTrajectory()
 {
 	GetSpawnLocation();
 	GetSpawnRotation();
+	const float ProjectileGravity = ProjectileToSpawn->GetDefaultObject<AProjectile_Base>()->GetProjectileGravity();
+	const float ProjectileVelocity = ProjectileToSpawn->GetDefaultObject<AProjectile_Base>()->GetInitialProjectileSpeed();
 	FVector TempLocation = SocketLocation;
 	/*Predict Trajectory*/
 	FVector CurrentVel = (ProjectileVelocity * UKismetMathLibrary::GetForwardVector(SocketRotation));
@@ -82,8 +85,8 @@ void AWeapon_Base::DrawPredictTrajectory()
 	float CurrentTime = 0.0f;
 	FVector TraceStart = TempLocation;
 	FVector TraceEnd = TraceStart;
-	const float MaxSimTime = 5.0f;
-	const float SimFrequency = 4.0f;
+	const float MaxSimTime = TrajectoryMaxDrawDuration;
+	const float SimFrequency = TrajectoryDrawFrequency;
 	const float SubstepDeltaTime = 1.0f / SimFrequency;
 	TArray<FVector> PathSeg;
 	PathSeg.Add(TempLocation);
@@ -93,7 +96,7 @@ void AWeapon_Base::DrawPredictTrajectory()
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f"), ActualStepDeltaTime));
 		CurrentTime += ActualStepDeltaTime;
 		FVector OldVelocity = CurrentVel;
-		CurrentVel = OldVelocity + FVector(0.f, 0.f, GravityZ * ActualStepDeltaTime);
+		CurrentVel = OldVelocity + FVector(0.0f, 0.0f, GravityZ * ActualStepDeltaTime);
 		TraceStart = TraceEnd;
 		TraceEnd = TraceStart + (OldVelocity + CurrentVel) * (0.5f * ActualStepDeltaTime);
 		PathSeg.Add(TraceEnd);
@@ -101,7 +104,30 @@ void AWeapon_Base::DrawPredictTrajectory()
 
 	for (int x = 0; x < PathSeg.Num() - 1; x++)
 	{
-		DrawDebugLine(GetWorld(), PathSeg[x], PathSeg[x + 1], FColor::Purple, false, 0.05f, 0, 0.5f);
+		FRotator PathSegRotation = UKismetMathLibrary::FindLookAtRotation(PathSeg[x], PathSeg[x + 1]);
+		FTransform CurrentPathSegTransform = FTransform(PathSegRotation, PathSeg[x]);
+		UParticleSystemComponent* TrajectoryPathSegPS;
+		if (bUseShape) 
+		{
+			PathSegRotation.Yaw = PathSegRotation.Yaw - 90.0f;
+			TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryShapeParticle, CurrentPathSegTransform, true);
+			if (TrajectoryPathSegPS) 
+			{
+				TrajectoryPathSegPS->SetRelativeRotation(PathSegRotation);
+			}
+		}
+		else 
+		{
+			TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryParticle, CurrentPathSegTransform, true);
+			if (TrajectoryPathSegPS)
+			{
+				TrajectoryPathSegPS->SetBeamSourcePoint(0, PathSeg[x], 0);
+				TrajectoryPathSegPS->SetBeamTargetPoint(0, PathSeg[x + 1], 0);
+			}
+		}
+		
+		//TrajectoryParticle->SetBeamTargetPoint(0, PathSeg[x + 1],0);
+		//DrawDebugLine(GetWorld(), PathSeg[x], PathSeg[x + 1], FColor::Purple, false, 0.05f, 0, 0.5f);
 	}
 
 	/*-----------------------------------------------------------*/

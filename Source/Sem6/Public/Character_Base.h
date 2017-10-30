@@ -106,6 +106,9 @@ protected:
 	UFUNCTION()
 	void OnRep_MyPlayerController();
 	/*Stamina // Mana*/
+	UPROPERTY(VisibleDefaultsOnly, Category = "Stamina")
+	bool bStaminaCheatEnabled;
+
 	UPROPERTY(ReplicatedUsing = OnRep_Stamina)
 	float Stamina;
 	float MaxStamina;
@@ -362,7 +365,7 @@ public:
 
 	UFUNCTION()
 	void OnRep_MyPlayerState();
-
+	/*Stamina*/
 	UFUNCTION(BlueprintPure, Category = "Stamina")
 	float GetStaminaVal() {return Stamina;}
 
@@ -372,4 +375,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stamina")
 	float SetStamina(float StaminaVal, bool DrainStamina);
 
+	UFUNCTION(BlueprintCallable,Category = "Stamina")
+	void SetStaminaCheatEnabled(bool bEnable) { bStaminaCheatEnabled = bEnable; }
+
+	UFUNCTION(BlueprintPure, Category = "Stamina")
+	bool GetStaminaCheatEnabled() { return bStaminaCheatEnabled;}
+	/*---------------------------------*/
 };

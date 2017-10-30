@@ -9,6 +9,8 @@
 #include "HighlightInterface.h"
 #include "Weapon_Base.generated.h"
 
+class AProjectile_Base;
+
 UCLASS()
 class SEM6_API AWeapon_Base : public AActor,
 	public IGameplayInterface,
@@ -46,7 +48,7 @@ protected:
 	FWeaponStats MyStats;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
-	TSubclassOf<AActor> ProjectileToSpawn;
+	TSubclassOf<AProjectile_Base> ProjectileToSpawn;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	FVector SocketLocation;
@@ -76,16 +78,26 @@ protected:
 	FTimerHandle SpawnFireCoolDown;
 
 	void ResetCanFire();
-
+	/*Trajectory*/
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
 	bool bShowTrajectory;
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	bool bUseShape= false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
+	UParticleSystem* TrajectoryParticle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
+	UParticleSystem* TrajectoryShapeParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	float TrajectoryMaxDrawDuration = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Trajectory")
+	float TrajectoryDrawFrequency = 4.0f;
 
 	void DrawPredictTrajectory();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
-	float ProjectileGravity = 0.1f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
-	float ProjectileVelocity = 1000.0f;
+	/*----------------------*/
 public:	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
 	FItemToSellInfo WeaponInfomation;
