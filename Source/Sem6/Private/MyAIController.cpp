@@ -20,6 +20,8 @@ AMyAIController::AMyAIController(const FObjectInitializer& ObjectInitializer)
 	BrainComponent = BehaviorComp = ObjectInitializer.CreateDefaultSubobject<UBehaviorTreeComponent>(this, TEXT("BehaviorComp"));
 
 	bIsStunned = false;
+	PrimaryActorTick.bCanEverTick = false;
+
 	//bWantsPlayerState = true;
 }
 

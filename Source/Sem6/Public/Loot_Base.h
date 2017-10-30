@@ -38,9 +38,6 @@ public:
 
 	virtual EWeaponType GetWeaponType_Implementation() override;
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	UFUNCTION(BlueprintNativeEvent, Category = "PickUp")
 	void OnPickUp();
 

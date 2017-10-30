@@ -36,8 +36,6 @@ protected:
 	
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Phsyics")
 	bool bSetSimulatePhysic(bool bShouldSimulate);

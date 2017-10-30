@@ -14,6 +14,8 @@
 
 APlayerState_Base::APlayerState_Base(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+	PrimaryActorTick.bCanEverTick = false;
+
 	TeamNumber = 0;
 	NumKills = 0;
 	PlayerScore = 0.0f;

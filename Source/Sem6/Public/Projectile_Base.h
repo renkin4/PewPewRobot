@@ -26,9 +26,6 @@ protected:
 	float ProjectilGravity = 0.1f;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	UFUNCTION(BlueprintPure, Category = "Projectile Stats")
 	float GetInitialProjectileSpeed(){ return InitialProjectileSpeed; }
 

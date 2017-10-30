@@ -8,6 +8,8 @@ AMyGameState_Base::AMyGameState_Base(const FObjectInitializer& ObjectInitializer
 	:Super(ObjectInitializer)
 {
 	WiningScore = 50.0f;
+	PrimaryActorTick.bCanEverTick = false;
+
 }
 
 void AMyGameState_Base::CheckScore_Implementation()

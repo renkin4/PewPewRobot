@@ -8,6 +8,8 @@ AMyPlayerStart_Base::AMyPlayerStart_Base(const FObjectInitializer& ObjectInitial
 	:Super(ObjectInitializer)
 {
 	bIsOwned = false;
+	PrimaryActorTick.bCanEverTick = false;
+
 }
 
 void AMyPlayerStart_Base::BeginPlay() 

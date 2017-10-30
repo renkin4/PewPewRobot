@@ -78,9 +78,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Mesh")
 	UStaticMeshComponent* GetMainMesh();
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	void SnapBoxToTarget(ACharacter* Player, AActor* Box);
 
 	int GetNumOfBox();

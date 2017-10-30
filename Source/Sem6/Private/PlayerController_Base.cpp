@@ -14,6 +14,8 @@
 APlayerController_Base::APlayerController_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
+	PrimaryActorTick.bCanEverTick = false;
+
 	bIsAiming = false;
 	SpringAimLengthModifier = 1.0f;
 	/*Setup Timeline*/

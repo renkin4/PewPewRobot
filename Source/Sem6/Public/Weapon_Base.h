@@ -16,7 +16,7 @@ class SEM6_API AWeapon_Base : public AActor,
 	public IGameplayInterface,
 	public IHighlightInterface
 {
-	GENERATED_BODY()
+	GENERATED_UCLASS_BODY()
 	
 public:	
 	// Sets default values for this actor's properties

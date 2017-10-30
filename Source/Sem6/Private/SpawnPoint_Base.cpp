@@ -15,7 +15,7 @@ ASpawnPoint_Base::ASpawnPoint_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	/*Root Comp*/
 	MyRootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -133,12 +133,6 @@ UStaticMeshComponent * ASpawnPoint_Base::GetMainMesh()
 	}
 	return nullptr;
 
-}
-
-// Called every frame
-void ASpawnPoint_Base::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void ASpawnPoint_Base::SnapBoxToTarget(ACharacter* Player, AActor* Box)

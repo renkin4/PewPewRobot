@@ -10,7 +10,7 @@ AMyBox::AMyBox(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	bReplicateMovement = true;
 
@@ -56,13 +56,6 @@ void AMyBox::HighLightActor_Implementation()
 void AMyBox::TurnOffCustomDepth()
 {
 	MyBoxMesh->SetRenderCustomDepth(false);
-}
-
-// Called every frame
-void AMyBox::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 bool AMyBox::bSetSimulatePhysic(bool bShouldSimulate)

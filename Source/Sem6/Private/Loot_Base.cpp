@@ -8,7 +8,7 @@ ALoot_Base::ALoot_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 }
@@ -42,13 +42,6 @@ ELootAbleType ALoot_Base::GetLootableType_Implementation()
 EWeaponType ALoot_Base::GetWeaponType_Implementation()
 {
 	return EWeaponType::WT_None;
-}
-
-// Called every frame
-void ALoot_Base::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void ALoot_Base::OnUseAction_Implementation()
