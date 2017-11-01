@@ -42,20 +42,36 @@ void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
+	/*4 layers of Condom SUPER SAFE i hope*/
+
 	/*Iteration Control*/
 	ElapsedTime += DeltaTime;
 	if (ElapsedTime >= RealDesiredFPS)
 	{
 		if (PC)
 		{
-			if (bShowTrajectory && PC->GetIsAiming())
+			ACharacter_Base* MyOwner = Cast<ACharacter_Base>(PawnOwner->GetPawn());
+			if (MyOwner)
 			{
-				DrawPredictTrajectory();
+				if (MyOwner->GetCurrentWeapon() != NULL)
+				{
+					if (MyOwner->GetCurrentWeapon() == this)
+					{
+						if (bShowTrajectory && PC->GetIsAiming())
+						{
+							DrawPredictTrajectory();
+						}
+					}
+				}
+
 			}
+						
 		}
 		ElapsedTime -= RealDesiredFPS;
 	}
 	/*---------------*/
+	
+	
 }
 
 void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

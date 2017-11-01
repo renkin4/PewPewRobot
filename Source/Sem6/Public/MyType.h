@@ -53,7 +53,7 @@ struct FCharacterInvetory
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", meta = (DeprecationMessage = "No Longer using this"))
 	bool bIsWeaponExist;
 
 

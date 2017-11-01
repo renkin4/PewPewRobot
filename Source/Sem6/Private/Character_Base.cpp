@@ -17,6 +17,7 @@
 #include "DamageType_Base.h"
 #include "SpawnPoint_Base.h"
 #include "HighlightInterface.h"
+#include "Components/StaticMeshComponent.h"
 
 // Sets default values
 //Constructor
@@ -43,6 +44,9 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	Stamina = MaxStamina;
 	bShouldRegenStamina = false;
 	bIsPunching = false;
+	CurrentWeaponIndex = 0;
+	MaxNumOfWeapon = 6;
+	bDropWeapon = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -54,12 +58,12 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ACharacter_Base, bIsRunning, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MyPlayerState, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, bIsAtBoxHolderLocation, COND_None);
-	DOREPLIFETIME_CONDITION(ACharacter_Base, MyPlayerController, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, MyPlayerController, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MaxHealth, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Health, COND_None);
-	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_None);
-	DOREPLIFETIME_CONDITION(ACharacter_Base, Stamina, COND_None);
-	DOREPLIFETIME_CONDITION(ACharacter_Base, bStaminaCheatEnabled, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, Stamina, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, bStaminaCheatEnabled, COND_OwnerOnly);
 }
 
 float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
@@ -123,6 +127,8 @@ float ACharacter_Base::ProcessDamageTypeDamage_Implementation(float Damage, AAct
 void ACharacter_Base::BeginPlay()
 {
 	Super::BeginPlay();
+	//I kinda Broke it, Server always Return 0.5f so i manually set it here
+	CustomTimeDilation = 1.0f;
 
 }
 
@@ -146,11 +152,12 @@ void ACharacter_Base::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	/*Bind Delegate input to functions*/
 	if (PlayerInputComponent->IsValidLowLevel())
 	{
-
+		//WeaponChoice
 		PlayerInputComponent->BindAxis("Forward", this, &ACharacter_Base::MoveForward);
 		PlayerInputComponent->BindAxis("Right", this, &ACharacter_Base::MoveRight);
 		PlayerInputComponent->BindAxis("LookUp", this, &ACharacter_Base::PitchLookUp);
 		PlayerInputComponent->BindAxis("Turn", this, &ACharacter_Base::YawTurn);
+		PlayerInputComponent->BindAxis("WeaponChoice", this, &ACharacter_Base::WeaponChoice);
 
 		PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter_Base::OnJump);
 		PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacter_Base::OnFire);
@@ -164,6 +171,8 @@ void ACharacter_Base::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		PlayerInputComponent->BindAction("SpeedRun", IE_Released, this, &ACharacter_Base::OnWalk);
 		PlayerInputComponent->BindAction("UseLootable", IE_Pressed, this, &ACharacter_Base::OnUseLootable);
 		PlayerInputComponent->BindAction("SwitchSelection", IE_Pressed, this, &ACharacter_Base::OnSwitchSelection);
+		PlayerInputComponent->BindAction("DropWeapon", IE_Pressed, this, &ACharacter_Base::OnDropWeapon);
+		PlayerInputComponent->BindAction("DropWeapon", IE_Released, this, &ACharacter_Base::OnDropWeaponRelease);
 
 	}
 }
@@ -195,6 +204,16 @@ void ACharacter_Base::YawTurn(float axis)
 	AddControllerYawInput(axis);
 }
 
+void ACharacter_Base::WeaponChoice(float axis)
+{
+	if (axis > 0.2f) 
+	{
+		uint8 SelectionChoice = (uint8)axis - 1;
+		CurrentWeaponIndex = SelectionChoice;
+		OnChangeWeapon();
+	}
+}
+
 void ACharacter_Base::OnJump()
 {
 	Jump();
@@ -219,6 +238,32 @@ void ACharacter_Base::OnUseLootable()
 void ACharacter_Base::OnSwitchSelection()
 {
 	SelectedItemIndex++;
+}
+
+void ACharacter_Base::OnDropWeapon()
+{
+	bDropWeapon = true;
+
+	AWeapon_Base* Weapon;
+	TArray<UStaticMeshComponent*> StaticMeshComponents;
+	Weapon = GetCurrentWeapon();
+	if (Weapon == NULL)
+		return;
+
+	DetachActorFromMesh(Weapon);
+	Weapon->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+	SetLootableCollision(StaticMeshComponents[0], ECC_GameTraceChannel4, ECR_Block);
+
+	Inventory.Weapon.Remove(Weapon->GetClass());
+	WeaponArray.Remove(Weapon);
+
+	OnChangeWeapon();
+	UpdateInventoryUIDelegate.Broadcast();
+}
+
+void ACharacter_Base::OnDropWeaponRelease()
+{
+	bDropWeapon = false;
 }
 
 void ACharacter_Base::OnCollect()
@@ -251,17 +296,17 @@ void ACharacter_Base::OnFire()
 {
 	SetRunnning(false);
 
-	if (CurrentWeapon == NULL)
+	if (GetCurrentWeapon() == NULL)
 	{
 		if(CanFire())
 			OnPunch();
 		return;
 	}
 
-	if (!CanFire() || !CurrentWeapon->CanFire())
+	if (!CanFire() || !GetCurrentWeapon()->CanFire())
 		return;
 
-	switch (Cast<IGameplayInterface>(CurrentWeapon)->Execute_GetWeaponType(CurrentWeapon))
+	switch (Cast<IGameplayInterface>(GetCurrentWeapon())->Execute_GetWeaponType(GetCurrentWeapon()))
 	{
 	case EWeaponType::WT_None:
 		CharacterState = ECharacterState::CS_Punching;
@@ -276,8 +321,7 @@ void ACharacter_Base::OnFire()
 		CharacterState = ECharacterState::CS_Firing;
 		PlayAnimationState();
 		FireWeapon();
-		//TODO change to Event Notify From Animation
-		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, CurrentWeapon->GetWeaponDelay(), true);
+		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, GetCurrentWeapon()->GetWeaponDelay(), true);
 		break;
 	default:
 		break;
@@ -288,12 +332,12 @@ void ACharacter_Base::OnFire()
 void ACharacter_Base::OnReleaseFire()
 {
 	//TODO Set Change State Refactor
-	if (CurrentWeapon == NULL || !CanFire())
+	if (GetCurrentWeapon() == NULL || !CanFire())
 	{
 		return;
 	}
 
-	switch (Cast<IGameplayInterface>(CurrentWeapon)->Execute_GetWeaponType(CurrentWeapon))
+	switch (Cast<IGameplayInterface>(GetCurrentWeapon())->Execute_GetWeaponType(GetCurrentWeapon()))
 	{
 	case EWeaponType::WT_None:
 		CharacterState = ECharacterState::CS_Walk;
@@ -694,6 +738,7 @@ void ACharacter_Base::OnDeathNotify_Implementation()
 	DisableInput(MyPlayerController);
 	bIsDying = true;
 	//TODO Check for Available Currency, Deduct from there
+	//TODO Delete ALL Inventory
 	MyPlayerState->SetPlayerCurrency(MyPlayerState->GetPlayerCurrency() - 5.0f);
 	PlayAnimationState();
 	GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
@@ -845,9 +890,9 @@ void ACharacter_Base::OnHoldBox()
 	bIsHoldingBox = true;
 	PlayAnimationState();
 
-	if (CurrentWeapon != NULL)
+	if (GetCurrentWeapon() != NULL)
 	{
-		SetWeaponVisible(CurrentWeapon, false);
+		SetWeaponVisible(GetCurrentWeapon(), false);
 	}
 }
 
@@ -870,14 +915,14 @@ void ACharacter_Base::OnDropBox()
 	CharacterState = ECharacterState::CS_Walk;
 	PlayAnimationState();
 
-	if (CurrentWeapon != NULL)
+	if (GetCurrentWeapon() != NULL)
 	{
 		//TODO set function to Set Character State
 		EWeaponType WeaponType;
-		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(CurrentWeapon);
-		WeaponType = GameplayInterface->Execute_GetWeaponType(CurrentWeapon);
+		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentWeapon());
+		WeaponType = GameplayInterface->Execute_GetWeaponType(GetCurrentWeapon());
 		PlayTypeOfWeaponAnimation(WeaponType);
-		SetWeaponVisible(CurrentWeapon, true);
+		SetWeaponVisible(GetCurrentWeapon(), true);
 	}
 }
 
@@ -939,11 +984,11 @@ void ACharacter_Base::LootableFilter()
 
 bool ACharacter_Base::CanFire()
 {
-	if (CurrentWeapon != NULL || !bIsRunning || !bIsHoldingBox)
+	if (GetCurrentWeapon() != NULL || !bIsRunning || !bIsHoldingBox)
 	{
-		if (CurrentWeapon->IsValidLowLevel()) 
+		if (GetCurrentWeapon()->IsValidLowLevel()) 
 		{
-			if (CurrentWeapon->GetStaminaCost() > GetStaminaVal())
+			if (GetCurrentWeapon()->GetStaminaCost() > GetStaminaVal())
 				return false;
 		}
 		return true;
@@ -952,27 +997,54 @@ bool ACharacter_Base::CanFire()
 	return false;
 }
 
+AWeapon_Base* ACharacter_Base::GetCurrentWeapon()
+{
+	if (!WeaponArray.IsValidIndex(0) || !WeaponArray.IsValidIndex(CurrentWeaponIndex))
+		return NULL;
+
+	return Cast<AWeapon_Base>(WeaponArray[CurrentWeaponIndex]);
+}
+
+void ACharacter_Base::OnChangeWeapon()
+{
+	if (GetCurrentWeapon()->IsValidLowLevel()) 
+	{
+		EWeaponType WeaponType;
+		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentWeapon());
+		if (GameplayInterface) 
+		{
+			WeaponType = GameplayInterface->Execute_GetWeaponType(GetCurrentWeapon());
+			PlayTypeOfWeaponAnimation(WeaponType);
+			SetCurrentWeapon(GetCurrentWeapon());
+		}
+	}
+	else 
+	{
+		SetCurrentWeapon(NULL);
+		CharacterState = ECharacterState::CS_Walk;
+		PlayAnimationState();
+	}
+}
+
 void ACharacter_Base::OnLootWeapon()
 {
+	if (WeaponArray.Num() == MaxNumOfWeapon) 
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BEEP BEEP: Max Inventory"));
+		return;
+	}
 	AWeapon_Base* Weapon;
-	EWeaponType WeaponType;
 	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(GetCurrentSelectedItem().GetActor());
 
-	//TODO Change from Selection from Array % with the highest number and increment
 	Weapon = Cast<AWeapon_Base>(GetCurrentSelectedItem().GetActor());
-	WeaponType = GameplayInterface->Execute_GetWeaponType(Weapon);
 	Weapon->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+	AddWeaponIntoArray(Weapon);
 
-	Weapon->SetPawnOwner(GetController());
-	Inventory.Weapon.Add(Weapon->GetClass());
-	SetCurrentWeapon(Weapon);
-
+	SetWeaponVisible(Weapon,false);
 	SetOnHoldAndDropCollision(StaticMeshComponents[0], ECR_Ignore);
 	AttachActorToMesh(Weapon);
 
-	PlayTypeOfWeaponAnimation(WeaponType);
-	
+	OnChangeWeapon();
 }
 
 void ACharacter_Base::OnPunch()
@@ -1013,35 +1085,35 @@ void ACharacter_Base::OnPunchNotify()
 
 void ACharacter_Base::AttachActorToMesh(AActor * ActorToAttach)
 {
+	IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(ActorToAttach);
+	switch (GameplayInterface->Execute_GetLootableType(ActorToAttach))
+	{
+	case ELootAbleType::LAT_Weapon:
+		ActorToAttach->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "GunHolder");
+		//MULTICAST_AttachEquip(ActorToAttach, "GunHolder");
+		break;
+	case ELootAbleType::LAT_Box:
+		ActorToAttach->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "ItemHolder");
+		//MULTICAST_AttachEquip(ActorToAttach, "ItemHolder");
+		break;
+	default:
+		break;
+	}
 	if (Role < ROLE_Authority) 
 	{
 		SERVER_AttachEquip(ActorToAttach);
-	}
-	else 
-	{
-		IGameplayInterface* GameplayInterface = Cast<IGameplayInterface>(ActorToAttach);
-		switch (GameplayInterface->Execute_GetLootableType(ActorToAttach))
-		{
-		case ELootAbleType::LAT_Weapon:
-			MULTICAST_AttachEquip(ActorToAttach, "GunHolder");
-			break;
-		case ELootAbleType::LAT_Box:
-			MULTICAST_AttachEquip(ActorToAttach, "ItemHolder");
-			break;
-		default:
-			break;
-		}
 	}
 }
 
 void ACharacter_Base::DetachActorFromMesh(AActor * ActorToDettach)
 {
+	ActorToDettach->bReplicateMovement = true;
+	ActorToDettach->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	//ActorToDettach->SetLifeSpan(180.0f);
 	if (Role < ROLE_Authority)
 	{
 		SERVER_DettachEquip(ActorToDettach);
-		return;
 	}
-	MULTICAST_DettachEquip(ActorToDettach);
 }
 
 void ACharacter_Base::SetLootableCollision(UStaticMeshComponent * ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse)
@@ -1049,11 +1121,9 @@ void ACharacter_Base::SetLootableCollision(UStaticMeshComponent * ActorComponent
 	if (Role < ROLE_Authority)
 	{
 		SERVER_SetCollision(ActorComponentToSet, SetChannel, ChannelResponse);
+		return;
 	}
-	else 
-	{
-		MULTICAST_SetCollision(ActorComponentToSet, SetChannel, ChannelResponse);
-	}
+	MULTICAST_SetCollision(ActorComponentToSet, SetChannel, ChannelResponse);
 }
 
 void ACharacter_Base::SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMeshComponent, ECollisionResponse ChannelResponse)
@@ -1062,6 +1132,16 @@ void ACharacter_Base::SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMesh
 	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_WorldDynamic, ChannelResponse);
 	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_WorldStatic, ChannelResponse);
 	SetLootableCollision(StaticMeshComponent, ECollisionChannel::ECC_Visibility, ChannelResponse);
+}
+
+void ACharacter_Base::AddWeaponIntoArray(AWeapon_Base* Weapon)
+{
+	Weapon->SetPawnOwner(GetController());
+	Weapon->SetOwner(this);
+	Inventory.Weapon.Add(Weapon->GetClass());
+	WeaponArray.Add(Weapon);
+	UpdateInventoryUIDelegate.Broadcast();
+
 }
 
 void ACharacter_Base::OnDeathNotifyTimerRespawn()
@@ -1079,11 +1159,6 @@ bool ACharacter_Base::SERVER_OnPunch_Validate()
 	return true;
 }
 
-void ACharacter_Base::MULTICAST_AttachEquip_Implementation(AActor* ActorToAttach, const FName SocketName)
-{
-	ActorToAttach->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
-}
-
 void ACharacter_Base::SERVER_AttachEquip_Implementation(AActor* ActorToAttach)
 {
 	AttachActorToMesh(ActorToAttach);
@@ -1093,12 +1168,6 @@ bool ACharacter_Base::SERVER_AttachEquip_Validate(AActor* ActorToAttach)
 {
 	return true;
 } 
-
-void ACharacter_Base::MULTICAST_SetCollision_Implementation(UStaticMeshComponent * ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse)
-{
-	if (ActorComponentToSet->IsValidLowLevel())
-		ActorComponentToSet->SetCollisionResponseToChannel(SetChannel, ChannelResponse);
-}
 
 void ACharacter_Base::SERVER_SetCollision_Implementation(UStaticMeshComponent * ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse)
 {
@@ -1110,26 +1179,22 @@ bool ACharacter_Base::SERVER_SetCollision_Validate(UStaticMeshComponent * ActorC
 	return true;
 }
 
-void ACharacter_Base::SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldHide)
+void ACharacter_Base::SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldBeVisible)
 {
 	if (Role < ROLE_Authority)
 	{
-		SERVER_SetWeaponVisible(WeaponToHide, bShouldHide);
+		SERVER_SetWeaponVisible(WeaponToHide, bShouldBeVisible);
+		return;
 	}
-	else 
-	{
-		TArray<UStaticMeshComponent*> StaticMeshComponents;
-		WeaponToHide->GetComponents<UStaticMeshComponent>(StaticMeshComponents);
-		StaticMeshComponents[0]->SetVisibility(bShouldHide, true);
-	}
+	WeaponToHide->SetActorHiddenInGame(!bShouldBeVisible);
 }
 
-void ACharacter_Base::SERVER_SetWeaponVisible_Implementation(AWeapon_Base* WeaponToHide, bool bShouldHide)
+void ACharacter_Base::SERVER_SetWeaponVisible_Implementation(AWeapon_Base* WeaponToHide, bool bShouldBeVisible)
 {
-	SetWeaponVisible(WeaponToHide, bShouldHide);
+	SetWeaponVisible(WeaponToHide, bShouldBeVisible);
 }
 
-bool ACharacter_Base::SERVER_SetWeaponVisible_Validate(AWeapon_Base* WeaponToHide, bool bShouldHide)
+bool ACharacter_Base::SERVER_SetWeaponVisible_Validate(AWeapon_Base* WeaponToHide, bool bShouldBeVisible)
 {
 	return true;
 }
@@ -1144,29 +1209,35 @@ bool ACharacter_Base::SERVER_DettachEquip_Validate(AActor * ActorToDettach)
 	return true;
 }
 
-void ACharacter_Base::MULTICAST_DettachEquip_Implementation(AActor * ActorToDettach)
+void ACharacter_Base::MULTICAST_SetCollision_Implementation(UStaticMeshComponent * ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse)
 {
-	ActorToDettach->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	if (ActorComponentToSet->IsValidLowLevel())
+		ActorComponentToSet->SetCollisionResponseToChannel(SetChannel, ChannelResponse);
 }
 
 void ACharacter_Base::FireWeapon()
 {
-	if (CurrentWeapon->IsValidLowLevel())
-		CurrentWeapon->FireWeapon();
+	if (GetCurrentWeapon()->IsValidLowLevel())
+		GetCurrentWeapon()->FireWeapon();
 }
 
 void ACharacter_Base::SetCurrentWeapon(AWeapon_Base* Weapon)
 {
-	Inventory.bIsWeaponExist = true;
-	if (PreviousWeapon->IsValidLowLevel())
+	if (PreviousWeapon->IsValidLowLevel() && !bDropWeapon)
 	{
 		PreviousWeapon = CurrentWeapon;
+		/*To Check if it's not NULL After Conversion*/
+		if (PreviousWeapon->IsValidLowLevel())
+			SetWeaponVisible(PreviousWeapon, false);
 	}
-	else 
+	else
 	{
 		PreviousWeapon = Weapon;
 	}
 	CurrentWeapon = Weapon;
+
+	if(CurrentWeapon->IsValidLowLevel())
+		SetWeaponVisible(CurrentWeapon, true);
 }
 
 void ACharacter_Base::OnLootLootable(ALoot_Base* LootableItem)

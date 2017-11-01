@@ -11,6 +11,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCollectDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUseLootableDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUpdateInventoryUI);
 
 class APlayerState_Base;
 
@@ -56,7 +57,8 @@ protected:
 	void PitchLookUp(float axis);
 	void YawTurn(float axis);
 	/*----------------------------------------------------*/
-
+	void WeaponChoice(float axis);
+	/*----------------------------------------------------*/
 	/*Internal Actions*/
 	void OnJump();
 	void OnAim();
@@ -70,7 +72,9 @@ protected:
 	void OnReleasedAim();
 	void OnUseLootable();
 	void OnSwitchSelection();
-
+	void OnDropWeapon();
+	void OnDropWeaponRelease();
+	/*----------------------------------------------------*/
 	UPROPERTY(BlueprintAssignable)
 	FOnCollectDelegate OnCollectDelegate;
 
@@ -106,7 +110,7 @@ protected:
 	UFUNCTION()
 	void OnRep_MyPlayerController();
 	/*Stamina // Mana*/
-	UPROPERTY(VisibleDefaultsOnly, Category = "Stamina")
+	UPROPERTY(Replicated)
 	bool bStaminaCheatEnabled;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Stamina)
@@ -234,20 +238,12 @@ protected:
 
 	void LootableFilter();
 
-	/*Weapon*/
-	UFUNCTION(BlueprintPure, Category = "Weapon")
-	bool CanFire();
-	void SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldHide);
-	void OnLootWeapon();
 	void OnPunch();
 	void OnPunchNotify();
 	bool bIsPunching;
 	
 	UPROPERTY(EditAnywhere, Category = "Damage")
 	TSubclassOf<UDamageType> OnePunchDamageClass;
-
-	UFUNCTION(Server, WithValidation, Reliable)
-	void SERVER_SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldHide);
 
 	UFUNCTION(BlueprintCallable, Category = "Mesh")
 	void AttachActorToMesh(AActor* WeaponToAttach);
@@ -263,10 +259,29 @@ protected:
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_OnPunch();
 
-	//TODO set Current Weapon on Rep Notify
+	/*Weapon*/
+	bool bDropWeapon;
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	bool CanFire();
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	uint8 MaxNumOfWeapon;
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	float ImpulseForceOnWeaponDrop;
 	AWeapon_Base* CurrentWeapon;
 	AWeapon_Base* PreviousWeapon;
+	TArray<AWeapon_Base*> WeaponArray;
+	int32 CurrentWeaponIndex;
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void AddWeaponIntoArray(AWeapon_Base* Weapon);
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldBeVisible);
+	void OnLootWeapon();
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldBeVisible);
+	/*----------------------*/
 	FTimerHandle ShootingHandler;
 	FTimerHandle PunchingHandler;
 	FTimerHandle HoldingBoxHandler;
@@ -274,23 +289,17 @@ protected:
 
 	void OnDeathNotifyTimerRespawn();
 
-	UFUNCTION(NetMultiCast, Reliable)
-	void MULTICAST_AttachEquip(AActor* ActorToAttach, const FName SocketName);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SERVER_AttachEquip(AActor* ActorToAttach);
-
-	UFUNCTION(NetMultiCast, Reliable)
-	void MULTICAST_DettachEquip(AActor* ActorToDettach);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SERVER_DettachEquip(AActor* ActorToDettach);
 
-	UFUNCTION(NetMultiCast, Reliable)
-	void MULTICAST_SetCollision(UStaticMeshComponent* ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SERVER_SetCollision(UStaticMeshComponent* ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MULTICAST_SetCollision(UStaticMeshComponent* ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse);
 
 	void FireWeapon();
 	void SetCurrentWeapon(AWeapon_Base* Weapon);
@@ -338,6 +347,27 @@ protected:
 	bool bEnableLootableSphere;
 
 public:
+	/*Weapon*/
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	AWeapon_Base* GetCurrentWeapon();
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	uint8 GetCurrentWeaponIndex() { return CurrentWeaponIndex % MaxNumOfWeapon; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	uint8 GetMaxNumOfWeapon() {return MaxNumOfWeapon;}
+
+	/*Forced to do this because UE4 Bug Doesnt' Show Texture on  Class Default For BLueprint*/
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	TArray<AWeapon_Base*> GetWeaponArray() { return WeaponArray; }
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void OnChangeWeapon();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnUpdateInventoryUI UpdateInventoryUIDelegate;
+
+	/*-------------*/
 	void SetMyPlayerController(APlayerController_Base* MyPlayerControllerRef);
 
 	UFUNCTION(BlueprintPure, Category = "PlayerController")

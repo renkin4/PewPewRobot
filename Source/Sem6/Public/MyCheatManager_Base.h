@@ -16,6 +16,8 @@ class SEM6_API UMyCheatManager_Base : public UCheatManager
 
 	UFUNCTION(Exec, Category = "Console Command")
 	void MaxStamina();
+	UFUNCTION(Exec, Category = "Console Command")
+	void SetMyCurrency(float Amount);
 
 	virtual void God() override;
 };

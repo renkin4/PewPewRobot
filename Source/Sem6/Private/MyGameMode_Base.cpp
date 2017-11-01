@@ -11,6 +11,7 @@
 #include "MyGameState_Base.h"
 #include "PlayerController_Base.h"
 #include "Runtime/Engine/Public/EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
 #include "MyBox.h"
 
 AMyGameMode_Base::AMyGameMode_Base(const FObjectInitializer& ObjectInitializer)
@@ -19,6 +20,12 @@ AMyGameMode_Base::AMyGameMode_Base(const FObjectInitializer& ObjectInitializer)
 	bDoOnceOnMatchStart = true;
 	bShouldStartMatch = false;
 	SetTeamID(0);
+	
+}
+
+void AMyGameMode_Base::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void AMyGameMode_Base::Tick(float DeltaSeconds)
@@ -185,8 +192,3 @@ void AMyGameMode_Base::ChangeSpawnPointColour(APlayerState_Base * PState, UStati
 	return;
 }
 
-void AMyGameMode_Base::BeginPlay()
-{
-	Super::BeginPlay();
-
-}

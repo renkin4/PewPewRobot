@@ -110,6 +110,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
 	FItemToSellInfo WeaponInfomation;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Icon")
+	UTexture2D* MyIcon;
+
 	virtual ELootAbleType GetLootableType_Implementation() override;
 
 	virtual EWeaponType GetWeaponType_Implementation() override;
@@ -127,6 +130,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Weapon State")
 	float GetStaminaCost(){ return MyStats.StaminaCost; }
+
 private:
 	FVector2D GetScreenLocation();
 
