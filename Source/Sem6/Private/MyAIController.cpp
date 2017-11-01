@@ -5,6 +5,8 @@
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Bool.h"
 #include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Vector.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Bool.h"
 #include "PlayerState_Base.h"
 #include "MyGameState_Base.h"
 #include "Weapon_Base.h"
@@ -41,6 +43,8 @@ void AMyAIController::Possess(APawn* InPawn)
 
 		EnemyKeyID = BlackboardComp->GetKeyID("Enemy");
 		IsStunnedID = BlackboardComp->GetKeyID("bIsStunned");
+		LastKnownLocationID = BlackboardComp->GetKeyID("LastKnownLocation");
+		bLostSightID = BlackboardComp->GetKeyID("bLostSight");
 
 		BehaviorComp->StartTree(*(Bot->BotBehavior));
 	}
@@ -139,6 +143,8 @@ bool AMyAIController::FindClosestEnemyWithLOS_Implementation(ACharacter_Base* Ex
 		}
 		if (BestPawn)
 		{
+			if (BestPawn) 
+				SetLastKnownLocation(BestPawn->GetActorLocation());
 			SetEnemy(BestPawn);
 			bGotEnemy = true;
 		}
@@ -146,7 +152,6 @@ bool AMyAIController::FindClosestEnemyWithLOS_Implementation(ACharacter_Base* Ex
 		{
 			SetEnemy(NULL);
 			bGotEnemy = false;
-
 		}
 	}
 	return bGotEnemy;
@@ -158,6 +163,15 @@ void AMyAIController::SetEnemy(class APawn* InPawn)
 	{
 		BlackboardComp->SetValue<UBlackboardKeyType_Object>(EnemyKeyID, InPawn);
 		SetFocus(InPawn);
+	}
+}
+
+void AMyAIController::SetLastKnownLocation(const FVector & LastKnownLocation)
+{
+	if (BlackboardComp)
+	{
+		BlackboardComp->SetValue<UBlackboardKeyType_Bool>(bLostSightID, true);
+		BlackboardComp->SetValue<UBlackboardKeyType_Vector>(LastKnownLocationID,LastKnownLocation);
 	}
 }
 

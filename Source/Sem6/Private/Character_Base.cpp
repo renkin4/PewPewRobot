@@ -142,6 +142,12 @@ void ACharacter_Base::Tick(float DeltaTime)
 		bIsTargeting = GetMyPlayerController()->GetIsAiming();
 		RegenStamina();
 	}
+
+	if (GetIsTargetting() && GetCurrentWeapon()!= NULL)
+	{
+		if (GetCurrentWeapon()->GetWeaponFireType() == EWeaponFireType::WT_ProjecTile)
+			GetCurrentWeapon()->DrawTrajectory();
+	}
 	
 }
 

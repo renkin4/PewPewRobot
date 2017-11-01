@@ -79,16 +79,6 @@ protected:
 
 	void ResetCanFire();
 	/*Trajectory*/
-	/*Iteration Control*/
-	float ElapsedTime = 0.0f;
-	float RealDesiredFPS;
-
-	/**FrameRate Persec**/
-	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
-	float DesiredFrameRatePS = 15.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Trajectory")
-	bool bShowTrajectory;
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
 	bool bUseShape= false;
 
@@ -104,7 +94,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
 	float TrajectoryDrawFrequency = 4.0f;
 
+	UFUNCTION(BlueprintCallable, Category = "Trajectory")
 	void DrawPredictTrajectory();
+
+	UFUNCTION(BlueprintCallable, Category = "Trajectory")
+	void FlushTrajectoryProjectile();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trajectory")
+	TArray<UParticleSystemComponent*> TrajectoryPathSegPSArray;
+
+	FTimerHandle ResetTrajectory;
 	/*----------------------*/
 public:	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
@@ -131,6 +130,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon State")
 	float GetStaminaCost(){ return MyStats.StaminaCost; }
 
+	UFUNCTION(BlueprintPure, Category = "Controller")
+	AController* GetPawnOwner() { return PawnOwner; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon State")
+	EWeaponFireType GetWeaponFireType() { return WeaponFireType; }
+
+	UFUNCTION(BlueprintCallable, Category = "Trajectory")
+	void DrawTrajectory();
 private:
 	FVector2D GetScreenLocation();
 

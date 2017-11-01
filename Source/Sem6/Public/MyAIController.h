@@ -26,6 +26,7 @@ private:
 
 public:
 	void SetEnemy(class APawn* InPawn);
+	void SetLastKnownLocation(const FVector& LastKnownLocation);
 
 	virtual void GameHasEnded(class AActor* EndGameFocus = NULL, bool bIsWinner = false) override;
 	virtual void Possess(class APawn* InPawn) override;
@@ -69,6 +70,8 @@ public:
 protected:
 	int32 EnemyKeyID;
 	int32 IsStunnedID;
+	int32 LastKnownLocationID;
+	int32 bLostSightID;
 
 	/** Handle for efficient management of Respawn timer */
 	FTimerHandle TimerHandle_Respawn;

@@ -22,7 +22,6 @@ AWeapon_Base::AWeapon_Base(const FObjectInitializer& ObjectInitializer)
 	WeaponFireType = EWeaponFireType::WT_InstantHit;
 	bReplicates = true;
 	bCanFire = true;
-	bShowTrajectory = true;
 
 	ShowFireLine = false;
 }
@@ -33,45 +32,12 @@ void AWeapon_Base::BeginPlay()
 	Super::BeginPlay();
 	GetComponents<UStaticMeshComponent>(StaticMeshComp);
 	StaticMeshComp[0]->CustomDepthStencilValue = 1;
-	RealDesiredFPS = 1.0f / DesiredFrameRatePS;
-
 }
 
 // Called every frame
 void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
-	/*4 layers of Condom SUPER SAFE i hope*/
-
-	/*Iteration Control*/
-	ElapsedTime += DeltaTime;
-	if (ElapsedTime >= RealDesiredFPS)
-	{
-		if (PC)
-		{
-			ACharacter_Base* MyOwner = Cast<ACharacter_Base>(PawnOwner->GetPawn());
-			if (MyOwner)
-			{
-				if (MyOwner->GetCurrentWeapon() != NULL)
-				{
-					if (MyOwner->GetCurrentWeapon() == this)
-					{
-						if (bShowTrajectory && PC->GetIsAiming())
-						{
-							DrawPredictTrajectory();
-						}
-					}
-				}
-
-			}
-						
-		}
-		ElapsedTime -= RealDesiredFPS;
-	}
-	/*---------------*/
-	
-	
 }
 
 void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -100,32 +66,42 @@ void AWeapon_Base::ResetCanFire()
 
 void AWeapon_Base::DrawPredictTrajectory()
 {
+	/*Refactoring these*/
 	GetSpawnLocation();
 	GetSpawnRotation();
+	/*-----------------------*/
+	/*Get The Speed and Gravity set in the projectile*/
 	const float ProjectileGravity = ProjectileToSpawn->GetDefaultObject<AProjectile_Base>()->GetProjectileGravity();
 	const float ProjectileVelocity = ProjectileToSpawn->GetDefaultObject<AProjectile_Base>()->GetInitialProjectileSpeed();
+	/*-----------------------*/
 	FVector TempLocation = SocketLocation;
 	/*Predict Trajectory*/
 	FVector CurrentVel = (ProjectileVelocity * UKismetMathLibrary::GetForwardVector(SocketRotation));
 	const float GravityZ = GetWorld()->GetDefaultGravityZ()*ProjectileGravity;
+	/*Time Variable*/
 	float CurrentTime = 0.0f;
-	FVector TraceStart = TempLocation;
-	FVector TraceEnd = TraceStart;
 	const float MaxSimTime = TrajectoryMaxDrawDuration;
 	const float SimFrequency = TrajectoryDrawFrequency;
-	const float SubstepDeltaTime = 1.0f / SimFrequency;
+	const float SubstepDeltaTime = 1.0f / SimFrequency; // The Travel time in 1 Second's Divided by Frequency to get the Amount Segments for 1 Seconds(Basically Draw 20)
+	/*-----------------------*/
+	/*Start Point And End Points*/
+	FVector StartPoint = TempLocation;
+	FVector EndPoint = StartPoint;
+	/*-----------------------*/
+	//Arrays of the Segments
 	TArray<FVector> PathSeg;
 	PathSeg.Add(TempLocation);
+
 	while (CurrentTime < MaxSimTime)
 	{
+		/*Find the Segments*/
 		const float ActualStepDeltaTime = FMath::Min(MaxSimTime - CurrentTime, SubstepDeltaTime);
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("%f"), ActualStepDeltaTime));
 		CurrentTime += ActualStepDeltaTime;
 		FVector OldVelocity = CurrentVel;
 		CurrentVel = OldVelocity + FVector(0.0f, 0.0f, GravityZ * ActualStepDeltaTime);
-		TraceStart = TraceEnd;
-		TraceEnd = TraceStart + (OldVelocity + CurrentVel) * (0.5f * ActualStepDeltaTime);
-		PathSeg.Add(TraceEnd);
+		StartPoint = EndPoint;
+		EndPoint = StartPoint + (OldVelocity + CurrentVel) * (0.5f * ActualStepDeltaTime);
+		PathSeg.Add(EndPoint);
 	}
 
 	for (int x = 0; x < PathSeg.Num() - 1; x++)
@@ -140,6 +116,7 @@ void AWeapon_Base::DrawPredictTrajectory()
 			if (TrajectoryPathSegPS) 
 			{
 				TrajectoryPathSegPS->SetWorldRotation(PathSegRotation);
+				TrajectoryPathSegPSArray.Add(TrajectoryPathSegPS);
 			}
 		}
 		else 
@@ -149,6 +126,7 @@ void AWeapon_Base::DrawPredictTrajectory()
 			{
 				TrajectoryPathSegPS->SetBeamSourcePoint(0, PathSeg[x], 0);
 				TrajectoryPathSegPS->SetBeamTargetPoint(0, PathSeg[x + 1], 0);
+				TrajectoryPathSegPSArray.Add(TrajectoryPathSegPS);
 			}
 		}
 		
@@ -157,6 +135,15 @@ void AWeapon_Base::DrawPredictTrajectory()
 	}
 
 	/*-----------------------------------------------------------*/
+}
+
+void AWeapon_Base::FlushTrajectoryProjectile()
+{
+	for (UParticleSystemComponent* PSC : TrajectoryPathSegPSArray) 
+	{
+		PSC->DestroyComponent();
+	}
+	TrajectoryPathSegPSArray.Empty();
 }
 
 ELootAbleType AWeapon_Base::GetLootableType_Implementation()
@@ -188,6 +175,16 @@ void AWeapon_Base::SetPawnOwner(AController* Controller)
 {
 	PawnOwner = Controller;
 	return;
+}
+
+void AWeapon_Base::DrawTrajectory()
+{
+	if (TrajectoryPathSegPSArray.Num() > 0)
+		FlushTrajectoryProjectile();
+
+	DrawPredictTrajectory();
+
+	GetWorldTimerManager().SetTimer(ResetTrajectory, this, &AWeapon_Base::FlushTrajectoryProjectile, 0.1f, false);
 }
 
 FVector2D AWeapon_Base::GetScreenLocation()
