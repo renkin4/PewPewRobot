@@ -135,4 +135,20 @@ protected:
 
 	FTimerHandle DelayOnUpdateSelectionUIHandle;
 	/*---------------------------------------------*/
+private:
+	/*Cheats*/
+	UFUNCTION(Exec, Category = "Console Command")
+	void MaxStamina();
+	UFUNCTION(Exec, Category = "Console Command")
+	void SetMyCurrency(float Amount);
+	UFUNCTION(Exec, Category = "Console Command")
+	void YangIsAwesome();
+
+	UFUNCTION(Server,WithValidation,Reliable)
+	void SERVER_MaxStamina();
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetMyCurrency(float Amount);
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_YangIsAwesome();
+	/*---------------------------------------------*/
 };

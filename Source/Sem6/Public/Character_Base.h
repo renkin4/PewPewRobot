@@ -254,6 +254,7 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Mesh")
 	void SetLootableCollision(UStaticMeshComponent* ActorComponentToSet, ECollisionChannel SetChannel, ECollisionResponse ChannelResponse);
 
+	UFUNCTION(BlueprintCallable, Category = "Mesh")
 	void SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMeshComponent,ECollisionResponse ChannelResponse);
 
 	UFUNCTION(Server, WithValidation, Reliable)

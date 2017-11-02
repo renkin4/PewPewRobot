@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
+#include "MyCheatManager_Base.h"
 
 
 
@@ -272,6 +273,78 @@ void APlayerController_Base::DelayOnUpdateSelectionUI()
 			GS->OnJoinTeam(PStateBase, PStateBase->GetTeamNum());
 		}
 	}
+}
+
+void APlayerController_Base::SetMyCurrency(float Amount)
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_SetMyCurrency(Amount);
+		return;
+	}
+	UMyCheatManager_Base* MyCheatManager = Cast<UMyCheatManager_Base>(CheatManager);
+	if (MyCheatManager)
+	{
+		MyCheatManager->SetMyCurrency(Amount);
+	}
+}
+
+void APlayerController_Base::MaxStamina()
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_MaxStamina();
+		return;
+	}
+	UMyCheatManager_Base* MyCheatManager = Cast<UMyCheatManager_Base>(CheatManager);
+	if (MyCheatManager)
+	{
+		MyCheatManager->MaxStamina();
+	}
+}
+
+void APlayerController_Base::YangIsAwesome()
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_YangIsAwesome();
+		return;
+	}
+	UMyCheatManager_Base* MyCheatManager = Cast<UMyCheatManager_Base>(CheatManager);
+	if (MyCheatManager)
+	{
+		MyCheatManager->God();
+	}
+}
+
+void APlayerController_Base::SERVER_MaxStamina_Implementation()
+{
+	MaxStamina();
+}
+
+bool APlayerController_Base::SERVER_MaxStamina_Validate()
+{
+	return true;
+}
+
+void APlayerController_Base::SERVER_SetMyCurrency_Implementation(float Amount)
+{
+	SetMyCurrency(Amount);
+}
+
+bool APlayerController_Base::SERVER_SetMyCurrency_Validate(float Amount)
+{
+	return true;
+}
+
+void APlayerController_Base::SERVER_YangIsAwesome_Implementation()
+{
+	YangIsAwesome();
+}
+
+bool APlayerController_Base::SERVER_YangIsAwesome_Validate()
+{
+	return true;
 }
 
 void APlayerController_Base::SERVER_UpdateSelectionUI_Implementation()
