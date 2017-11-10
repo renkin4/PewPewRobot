@@ -7,7 +7,8 @@
 #include "MyGameMode_Base.generated.h"
 
 class AMyPlayerStart_Base;
-class PlayerState_Base;
+class APlayerState_Base;
+class ACharacter_Base;
 
 /**
  * 
@@ -63,13 +64,16 @@ public:
 
 	/*Spawn Actors*/
 	UFUNCTION(BlueprintCallable, Category = "SpawnActor")
+	ACharacter_Base* SpawnCharacter(TSubclassOf<ACharacter_Base> CharacterClass, const FVector Location, const FRotator Rotation = FRotator(0.0f, 0.0f, 0.0f));
+
+	UFUNCTION(BlueprintCallable, Category = "SpawnActor")
 	AWeapon_Base* SpawnWeapon(TSubclassOf<AWeapon_Base> WeaponClass, const FVector Location, const FRotator Rotation);
 
 	UFUNCTION(BlueprintCallable, Category = "SpawnActor")
 	ALoot_Base* SpawnLoot(TSubclassOf<ALoot_Base> LootClass, const FVector Location, const FRotator Rotation);
 
 	UFUNCTION(BlueprintCallable, Category = "SpawnActor")
-	AMyBox* SpawnBox(TSubclassOf<AMyBox> BoxClass, const FVector Location, const FRotator Rotation);
+	AMyBox* SpawnBox(TSubclassOf<AMyBox> BoxClass, const FVector Location, const FRotator Rotation = FRotator(0.0f, 0.0f,0.0f));
 
 	UFUNCTION(BlueprintCallable, Category = "SpawnActor")
 	ASpawnPoint_Base* SpawnBase(TSubclassOf<ASpawnPoint_Base> SpawnPoint_Base_Class, const FVector Location, const FRotator Rotation);

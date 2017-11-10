@@ -13,6 +13,8 @@
 #include "Runtime/Engine/Public/EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "MyBox.h"
+#include "Character_Base.h"
+#include "Sem6.h"
 
 AMyGameMode_Base::AMyGameMode_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -20,12 +22,12 @@ AMyGameMode_Base::AMyGameMode_Base(const FObjectInitializer& ObjectInitializer)
 	bDoOnceOnMatchStart = true;
 	bShouldStartMatch = false;
 	SetTeamID(0);
-	
 }
 
 void AMyGameMode_Base::BeginPlay()
 {
 	Super::BeginPlay();
+	
 }
 
 void AMyGameMode_Base::Tick(float DeltaSeconds)
@@ -150,6 +152,13 @@ void AMyGameMode_Base::RespawnPlayer(APlayerController * PController)
 		PController->GetPawn()->Destroy();
 	}
 	RestartPlayer(PController);
+}
+
+ACharacter_Base * AMyGameMode_Base::SpawnCharacter(TSubclassOf<ACharacter_Base> CharacterClass, const FVector Location, const FRotator Rotation)
+{
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	return GetWorld()->SpawnActor<ACharacter_Base>(CharacterClass, Location, Rotation, SpawnInfo);
 }
 
 AWeapon_Base* AMyGameMode_Base::SpawnWeapon(TSubclassOf<AWeapon_Base> WeaponClass, const FVector Location, const FRotator Rotation)

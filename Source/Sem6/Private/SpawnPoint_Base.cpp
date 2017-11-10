@@ -180,6 +180,7 @@ void ASpawnPoint_Base::DestroyBox()
 			OccupiedBox[x]->Destroy();
 		}
 	}
+	GetWorld()->ForceGarbageCollection(true); //full purge 
 
 	ResetOccupiedBox();
 	ResetBoxHolderLocation();

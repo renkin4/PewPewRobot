@@ -18,6 +18,7 @@
 #include "SpawnPoint_Base.h"
 #include "HighlightInterface.h"
 #include "Components/StaticMeshComponent.h"
+#include "Sem6.h"
 
 // Sets default values
 //Constructor
@@ -646,9 +647,8 @@ void ACharacter_Base::OnKickScoreBox()
 	{
 		int32 AmountOfBoxes = MyPlayerState->GetSpawnLocation()->GetNumOfBox();
 		if (AmountOfBoxes <= 0)
-		{
 			return;
-		}
+
 		//float CurrencyAdded = (float)AmountOfBoxes + MyPlayerState->GetPlayerCurrency();
 		float ScoreAdded = (float)AmountOfBoxes + MyPlayerState->GetPlayerScore();
 		float CurrencyAdded = (((float)AmountOfBoxes - 0.5f) * 5) + MyPlayerState->GetPlayerCurrency();
@@ -818,7 +818,8 @@ void ACharacter_Base::PlayAnimationState()
 	//*Animation States need a better Refactor *//
 	if (bIsDying)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Died"));
+		print("Died");
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Died"));
 		SERVER_PlayAnimMontage(DeathMontage, 1.0f, "Default");
 		return;
 	}
@@ -1036,7 +1037,8 @@ void ACharacter_Base::OnLootWeapon()
 {
 	if (WeaponArray.Num() == MaxNumOfWeapon) 
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BEEP BEEP: Max Inventory"));
+		print("BEEP BEEP: Max Inventory");
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT(""));
 		return;
 	}
 	AWeapon_Base* Weapon;
@@ -1080,7 +1082,8 @@ void ACharacter_Base::OnPunchNotify()
 	FHitResult HitData(ForceInit);
 	FHitResult DamageInfo(ForceInit);
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("ONE PUNCH"));
+	print("ONE PUNCH");
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("ONE PUNCH"));
 	if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
 	{
 		UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 10.0f, HitData.ImpactNormal, DamageInfo, GetController(), this, OnePunchDamageClass);

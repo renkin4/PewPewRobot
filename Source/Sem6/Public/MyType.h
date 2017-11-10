@@ -109,3 +109,15 @@ struct FWeaponStats
 	float StaminaCost;
 
 };
+USTRUCT(BlueprintType)
+struct FSpawnLocation
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Location", Meta = (MakeEditWidget = true))
+	FVector MyLocation;
+
+	UPROPERTY(VisibleAnywhere, Category = "Spawn Location")
+	AActor* MyActor;
+
+};
