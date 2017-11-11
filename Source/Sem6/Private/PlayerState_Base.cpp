@@ -7,6 +7,7 @@
 #include "PlayerController_Base.h"
 #include "MyPlayerStart_Base.h"
 #include "SpawnPoint_Base.h"
+#include "MyGameMode_Base.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -26,6 +27,30 @@ APlayerState_Base::APlayerState_Base(const FObjectInitializer& ObjectInitializer
 	bPlayerIsReady = false;
 	bQuitter = false;
 	PlayerStartLocation = NULL;
+}
+
+void APlayerState_Base::OnWin()
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_OnWin();
+		return;
+	}
+	AMyGameMode_Base* GM = Cast<AMyGameMode_Base>(GetWorld()->GetAuthGameMode());
+	if (GM) 
+	{
+		GM->EndMatch();
+	}
+}
+
+void APlayerState_Base::SERVER_OnWin_Implementation()
+{
+	OnWin();
+}
+
+bool APlayerState_Base::SERVER_OnWin_Validate()
+{
+	return true;
 }
 
 void APlayerState_Base::BeginPlay()

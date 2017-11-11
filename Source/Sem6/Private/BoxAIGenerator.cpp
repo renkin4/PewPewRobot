@@ -28,7 +28,6 @@ void ABoxAIGenerator::BeginPlay()
 
 void ABoxAIGenerator::SpawnBoxOrAI()
 {
-	print("Looping");
 	UWorld* World = GetWorld();
 	AMyGameMode_Base* GM = Cast<AMyGameMode_Base>(World->GetAuthGameMode());
 	if (GM) 

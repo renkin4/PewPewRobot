@@ -18,6 +18,10 @@
 #include "SpawnPoint_Base.h"
 #include "HighlightInterface.h"
 #include "Components/StaticMeshComponent.h"
+#include "Runtime/Engine/Classes/AI/Navigation/NavigationPath.h"
+#include "Runtime/Engine/Classes/AI/Navigation/NavigationSystem.h"
+#include "MyPlayerStart_Base.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Sem6.h"
 
 // Sets default values
@@ -48,6 +52,7 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	CurrentWeaponIndex = 0;
 	MaxNumOfWeapon = 6;
 	bDropWeapon = false;
+	bCheckMap = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -61,6 +66,7 @@ void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ACharacter_Base, bIsAtBoxHolderLocation, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MyPlayerController, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, MaxHealth, COND_None);
+	DOREPLIFETIME_CONDITION(ACharacter_Base, bIsTargeting, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Health, COND_None);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Inventory, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(ACharacter_Base, Stamina, COND_OwnerOnly);
@@ -140,7 +146,7 @@ void ACharacter_Base::Tick(float DeltaTime)
 	if (MyPlayerController!=NULL  && GetController()->IsLocalController())
 	{
 		SphereTraceLootable();
-		bIsTargeting = GetMyPlayerController()->GetIsAiming();
+		SetTargetting(GetMyPlayerController()->GetIsAiming());
 		RegenStamina();
 	}
 
@@ -150,6 +156,10 @@ void ACharacter_Base::Tick(float DeltaTime)
 			GetCurrentWeapon()->DrawTrajectory();
 	}
 	
+	if (bCheckMap) 
+	{
+		StartLocationPathParticleControl();
+	}
 }
 
 // Called to bind functionality to input
@@ -175,6 +185,8 @@ void ACharacter_Base::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ACharacter_Base::OnAim);
 		PlayerInputComponent->BindAction("Aim", IE_Released, this, &ACharacter_Base::OnReleasedAim);
 		PlayerInputComponent->BindAction("SpeedRun", IE_Pressed, this, &ACharacter_Base::OnRun);
+		PlayerInputComponent->BindAction("CheckMap", IE_Pressed, this, &ACharacter_Base::OnCheckMap);
+		PlayerInputComponent->BindAction("CheckMap", IE_Released, this, &ACharacter_Base::OnReleaseCheckMap);
 		PlayerInputComponent->BindAction("SpeedRun", IE_Released, this, &ACharacter_Base::OnWalk);
 		PlayerInputComponent->BindAction("UseLootable", IE_Pressed, this, &ACharacter_Base::OnUseLootable);
 		PlayerInputComponent->BindAction("SwitchSelection", IE_Pressed, this, &ACharacter_Base::OnSwitchSelection);
@@ -271,6 +283,65 @@ void ACharacter_Base::OnDropWeapon()
 void ACharacter_Base::OnDropWeaponRelease()
 {
 	bDropWeapon = false;
+}
+
+void ACharacter_Base::OnCheckMap()
+{
+	bCheckMap = true;
+}
+
+void ACharacter_Base::OnReleaseCheckMap()
+{
+	bCheckMap = false;
+}
+
+void ACharacter_Base::OnDrawStartLocationPath()
+{
+	const FVector ParticleOffSet = FVector(0.0f, 0.0f, 40.0f);
+	UParticleSystemComponent* PathSegmentParticle;
+
+	APlayerState_Base* PState = Cast<APlayerState_Base>(GetMyPlayerController()->PlayerState);
+	if (PState)
+	{
+
+		UNavigationPath *tpath;
+		UNavigationSystem* NavSys = UNavigationSystem::GetCurrent(GetWorld());
+
+		tpath = NavSys->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), PState->GetPlayerStartLocation()->GetActorLocation());
+
+		if (tpath != NULL)
+		{
+			for (int pointiter = 0; pointiter < tpath->PathPoints.Num() - 1; pointiter++)
+			{
+				PathSegmentParticle = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), CheckMapBeamParticle, tpath->PathPoints[pointiter] + ParticleOffSet, FRotator(0.0f, 0.0f, 0.0f), false);
+				if (PathSegmentParticle)
+				{
+					PathSegmentParticle->SetBeamSourcePoint(0, tpath->PathPoints[pointiter] + ParticleOffSet, 0);
+					PathSegmentParticle->SetBeamTargetPoint(0, tpath->PathPoints[pointiter + 1] + ParticleOffSet, 0);
+					StartLocationPathParticles.Add(PathSegmentParticle);
+				}
+			}
+		}
+	}
+}
+
+void ACharacter_Base::FlushStartLocationParticles()
+{
+	for (auto PathParticles : StartLocationPathParticles) 
+	{
+		PathParticles->DestroyComponent();
+	}
+	StartLocationPathParticles.Empty();
+}
+
+void ACharacter_Base::StartLocationPathParticleControl()
+{
+	if (StartLocationPathParticles.Num() > 0)
+		FlushStartLocationParticles();
+
+	OnDrawStartLocationPath();
+
+	GetWorldTimerManager().SetTimer(ResetPathParticle, this, &ACharacter_Base::FlushStartLocationParticles, 0.1f, false);
 }
 
 void ACharacter_Base::OnCollect()
@@ -417,6 +488,25 @@ void ACharacter_Base::SetRunnning(bool bNewIsRunning)
 	{
 		SERVER_SetRunnning(bNewIsRunning);
 	}
+}
+
+void ACharacter_Base::SetTargetting(bool bShouldTarget)
+{
+	bIsTargeting = bShouldTarget;
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_SetTargetting(bShouldTarget);
+	}
+}
+
+void ACharacter_Base::SERVER_SetTargetting_Implementation(bool bShouldTarget)
+{
+	SetTargetting(bShouldTarget);
+}
+
+bool ACharacter_Base::SERVER_SetTargetting_Validate(bool bShouldTarget)
+{
+	return true;
 }
 
 bool ACharacter_Base::IsRunning() const

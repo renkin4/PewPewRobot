@@ -74,6 +74,8 @@ protected:
 	void OnSwitchSelection();
 	void OnDropWeapon();
 	void OnDropWeaponRelease();
+	void OnCheckMap();
+	void OnReleaseCheckMap();
 	/*----------------------------------------------------*/
 	UPROPERTY(BlueprintAssignable)
 	FOnCollectDelegate OnCollectDelegate;
@@ -90,6 +92,9 @@ protected:
 
 	/*Running*/
 	/*Replication*/
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetTargetting(bool bShouldTarget);
+
 	UPROPERTY(Transient, Replicated)
 	bool bIsRunning;
 
@@ -169,6 +174,7 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "State")
 	bool bIsHoldingBox;
+	UPROPERTY(Transient, Replicated)
 	bool bIsTargeting;
 	bool bIsCarrying;
 	bool bIsGettingShot;
@@ -347,6 +353,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bEnableLootableSphere;
 
+	bool bCheckMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "StartLocation Path")
+	UParticleSystem* CheckMapBeamParticle;
+
+	TArray<UParticleSystemComponent*> StartLocationPathParticles;
+
+	FTimerHandle ResetPathParticle;
+
+	void OnDrawStartLocationPath();
+	void FlushStartLocationParticles();
+	void StartLocationPathParticleControl();
+
 public:
 	/*Weapon*/
 	UFUNCTION(BlueprintPure, Category = "Weapon")
@@ -377,6 +396,8 @@ public:
 	void SetMyPlayerState(APlayerState_Base* MyPlayerStateRef);
 
 	void SetRunnning(bool bNewIsRunning);
+
+	void SetTargetting(bool bShouldTarget);
 
 	UFUNCTION(BlueprintCallable, Category = Pawn)
 	bool IsRunning() const;

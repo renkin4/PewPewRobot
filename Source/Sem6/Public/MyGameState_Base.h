@@ -48,6 +48,8 @@ public:
 	/*---------------------------------------------------*/
 	
 protected:
+	virtual void HandleMatchHasStarted() override;
+
 	/*Score*/
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Score")
 	void OnWin(APlayerState_Base* PState);

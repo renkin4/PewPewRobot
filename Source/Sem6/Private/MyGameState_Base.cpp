@@ -2,12 +2,14 @@
 
 #include "MyGameState_Base.h"
 #include "PlayerState_Base.h"
+#include "MyGameMode_Base.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
+#include "Sem6.h"
 
 AMyGameState_Base::AMyGameState_Base(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
-	WiningScore = 50.0f;
+	WiningScore = 4.0f;
 	PrimaryActorTick.bCanEverTick = false;
 
 }
@@ -34,6 +36,7 @@ void AMyGameState_Base::CheckScore_Implementation()
 
 void AMyGameState_Base::OnWin_Implementation(APlayerState_Base* PState)
 {
+	PState->OnWin();
 	GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Green, FString::Printf(TEXT("Winner is :: %s"), *PState->PlayerName));
 	/*TODO Unpossessed All Pawn that exist in the world and spawn the UI*/
 }
@@ -86,6 +89,18 @@ bool AMyGameState_Base::CheckEveryoneReady(APlayerState_Base* ServerPS)
 		}
 	}
 	return bIsEveryoneReady;
+}
+
+void AMyGameState_Base::HandleMatchHasStarted()
+{
+	// We run Beginplay Here. ( previously run in HandleMatchisWaitinToStart )
+	if (Role != ROLE_Authority)
+	{
+		// Server handles this in AGameMode::HandleMatchIsWaitingToStart
+		GetWorldSettings()->NotifyBeginPlay();
+	}
+
+	Super::HandleMatchHasStarted();
 }
 
 void AMyGameState_Base::MULTICAST_OnLeaveTeam_Implementation(uint8 TeamNum)

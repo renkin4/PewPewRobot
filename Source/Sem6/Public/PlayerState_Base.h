@@ -131,6 +131,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	bool SetPlayerReady(bool bShouldReady);
 	/*-----------------------------------*/
+
+	void OnWin();
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_OnWin();
 protected:
 	virtual void BeginPlay() override;
 
