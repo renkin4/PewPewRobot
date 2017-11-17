@@ -29,7 +29,9 @@ public:
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 
-
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Mesh")
+	USceneComponent* HomingLaucnherTarget;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -51,11 +53,20 @@ protected:
 
 	virtual float ProcessDamageTypeDamage_Implementation(float Damage, AActor* ActorToIgnore) override;
 
+	/** Update information for AnimInstance */
+	void UpdateAnimInstanceData();
+
 	/*Internal Movement*/
 	void MoveForward(float axis);
 	void MoveRight(float axis);
 	void PitchLookUp(float axis);
 	void YawTurn(float axis);
+
+	UFUNCTION(BlueprintCallable, Category = "Stun")
+	void StunPlayer(float StunDuration);
+	void RemovePlayerStun();
+
+	FTimerHandle RemoveStunHandler;
 	/*----------------------------------------------------*/
 	void WeaponChoice(float axis);
 	/*----------------------------------------------------*/
@@ -152,7 +163,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Health")
 	float LocalHealth;
 
-	UPROPERTY(BlueprintReadWrite, Replicated, Category = "Health")
+	UPROPERTY(EditAnywhere ,BlueprintReadWrite, Replicated, Category = "Health")
 	float MaxHealth;
 
 	float ActualDamage;
@@ -162,6 +173,9 @@ protected:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Death")
 	void OnDeathNotify();
+
+	UFUNCTION(BlueprintCallable, Category = "Kill")
+	void OnKill();
 	/*----------------------------------------------------*/
 
 	UPROPERTY(EditAnywhere, Category = "WalkMovement")
@@ -295,6 +309,7 @@ protected:
 	FTimerHandle DeathTimeHandler;
 
 	void OnDeathNotifyTimerRespawn();
+	void RemoveAI();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SERVER_AttachEquip(AActor* ActorToAttach);

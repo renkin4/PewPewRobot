@@ -10,7 +10,49 @@
 #include "Weapon_Base.generated.h"
 
 class AProjectile_Base;
+class UBoxComponent;
 
+USTRUCT()
+
+struct FWeaponData
+{
+	GENERATED_USTRUCT_BODY()
+
+	/** inifite ammo for reloads */
+	UPROPERTY(EditDefaultsOnly, Category = Ammo)
+	bool bInfiniteAmmo;
+
+	/** infinite ammo in clip, no reload required */
+	UPROPERTY(EditDefaultsOnly, Category = Ammo)
+	bool bInfiniteClip;
+
+	/** max ammo */
+	UPROPERTY(EditDefaultsOnly, Category = Ammo)
+	int32 MaxAmmo;
+
+	/** clip size */
+	UPROPERTY(EditDefaultsOnly, Category = Ammo)
+	int32 AmmoPerClip;
+
+	/** initial clips */
+	UPROPERTY(EditDefaultsOnly, Category = Ammo)
+	int32 InitialClips;
+
+	/** failsafe reload duration if weapon doesn't have any animation for it */
+	UPROPERTY(EditDefaultsOnly, Category = WeaponStat)
+	float NoAnimReloadDuration;
+
+	/** defaults */
+	FWeaponData()
+	{
+		bInfiniteAmmo = false;
+		bInfiniteClip = false;
+		MaxAmmo = 100;
+		AmmoPerClip = 20;
+		InitialClips = 4;
+		NoAnimReloadDuration = 1.0f;
+	}
+};
 UCLASS()
 class SEM6_API AWeapon_Base : public AActor,
 	public IGameplayInterface,
@@ -46,6 +88,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats ")
 	FWeaponStats MyStats;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon Stats ")
+	FWeaponData WeaponData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	TSubclassOf<AProjectile_Base> ProjectileToSpawn;
@@ -105,7 +150,22 @@ protected:
 
 	FTimerHandle ResetTrajectory;
 	/*----------------------*/
+
 public:	
+	UFUNCTION(BlueprintNativeEvent, Category = "Missile")
+	void HommingMissleTargetTrace();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Missile")
+	bool bIsHomming;
+
+	FTimerHandle ResetHomingLauncherHandle;
+
+	void ResetHomingLauncher();
+
+	AActor* HommingTarget;
+
+	void OnBeginOverlapComponentForLockOn(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Information")
 	FItemToSellInfo WeaponInfomation;
 
@@ -138,6 +198,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Trajectory")
 	void DrawTrajectory();
+
 private:
 	FVector2D GetScreenLocation();
 

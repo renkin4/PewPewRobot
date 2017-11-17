@@ -37,7 +37,7 @@ protected:
 
 	FTimerHandle SpawnHandler;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn Location")
+	UPROPERTY(EditAnywhere, Category = "Spawn Location")
 	float DelayOnEachSpawn;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn Location")

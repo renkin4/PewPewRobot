@@ -18,3 +18,7 @@ void AProjectile_Base::BeginPlay()
 	
 }
 
+void AProjectile_Base::SetHommingMissle_Implementation(AActor * TargettedActor)
+{
+}
+

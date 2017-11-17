@@ -2,6 +2,9 @@
 
 #include "AICharacter.h"
 #include "MyAIController.h"
+#include "DamageType_Base.h"
+#include "Sem6.h"
+#include "Kismet/GameplayStatics.h"
 #include "PlayerController_Base.h"
 
 AAICharacter::AAICharacter(const FObjectInitializer& ObjectInitializer)
@@ -10,6 +13,7 @@ AAICharacter::AAICharacter(const FObjectInitializer& ObjectInitializer)
 	AIControllerClass = AMyAIController::StaticClass();
 
 	bUseControllerRotationYaw = true;
+
 }
 
 void AAICharacter::FaceRotation(FRotator NewRotation, float DeltaTime)
@@ -35,6 +39,3 @@ bool AAICharacter::IsEnemyFor(AController * TestPC) const
 
 	return bIsEnemy;
 }
-
-
-

@@ -11,6 +11,8 @@
 /**
  * 
  */
+class AProjectile_Base;
+
 UCLASS()
 class SEM6_API APlayerController_Base : public APlayerController
 {
@@ -33,7 +35,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	void RespawnPlayer();
 
-	AActor* SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
+	AActor* SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner, AActor* HomingTarget);
 
 	/*Lobby*/
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
@@ -52,7 +54,12 @@ public:
 	void SetReady(bool bShouldReady);
 
 	/*---------------------------------------------*/
+	void SetActorOwner(AActor* ActorToSet, AActor* ActorOwner);
 
+protected:
+
+	UFUNCTION(Server,WithValidation,Reliable)
+	void SERVER_SetActorOwner(AActor* ActorToSet, AActor* ActorOwner);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -113,7 +120,7 @@ protected:
 	void SERVER_RespawnPlayer();
 	/*---------------------------------------------*/
 	UFUNCTION(Server, WithValidation, Reliable)
-	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner);
+	void SERVER_SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner, AActor* HomingTarget);
 	/*---------------------------------------------*/
 	/*Lobby*/
 	UFUNCTION(Server, WithValidation, Reliable)

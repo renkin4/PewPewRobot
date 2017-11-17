@@ -9,6 +9,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
 #include "MyCheatManager_Base.h"
+#include "Projectile_Base.h"
 
 
 
@@ -95,11 +96,11 @@ void APlayerController_Base::RespawnPlayer()
 	}
 }
 
-AActor * APlayerController_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+AActor * APlayerController_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner, AActor* HomingTarget)
 {
 	if (Role < ROLE_Authority)
 	{
-		SERVER_SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner);
+		SERVER_SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner, HomingTarget);
 		return nullptr;
 	}
 
@@ -110,8 +111,10 @@ AActor * APlayerController_Base::SpawnProjectile(FVector SpawnLoc, FRotator Spaw
 	{
 		Projectile->Instigator = Instigator;
 		Projectile->SetOwner(ProjOwner);
-
 		UGameplayStatics::FinishSpawningActor(Projectile, SpawnTM);
+		AProjectile_Base* HomingProjectile = Cast<AProjectile_Base>(Projectile);
+		if (HomingProjectile)
+			HomingProjectile->SetHommingMissle(HomingTarget);
 	}
 
 	return Projectile;
@@ -235,6 +238,28 @@ void APlayerController_Base::SetReady(bool bShouldReady)
 	{
 		PState->SetPlayerReady(bShouldReady);
 	}
+}
+
+void APlayerController_Base::SetActorOwner(AActor * ActorToSet, AActor * ActorOwner)
+{
+	if (ActorToSet->IsValidLowLevel())
+		ActorToSet->SetOwner(ActorOwner);
+	else
+		return;
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_SetActorOwner(ActorToSet, ActorOwner);
+	}
+}
+
+void APlayerController_Base::SERVER_SetActorOwner_Implementation(AActor * ActorToSet, AActor * ActorOwner)
+{
+	SetActorOwner(ActorToSet, ActorOwner);
+}
+
+bool APlayerController_Base::SERVER_SetActorOwner_Validate(AActor * ActorToSet, AActor * ActorOwner)
+{
+	return true;
 }
 
 void APlayerController_Base::SERVER_SetReady_Implementation(bool bShouldReady)
@@ -419,12 +444,12 @@ bool APlayerController_Base::SERVER_UpdateReadyStatus_Validate()
 	return true;
 }
 
-void APlayerController_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+void APlayerController_Base::SERVER_SpawnProjectile_Implementation(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner, AActor* HomingTarget)
 {
-	SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner);
+	SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, ProjOwner, HomingTarget);
 }
 
-bool APlayerController_Base::SERVER_SpawnProjectile_Validate(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner)
+bool APlayerController_Base::SERVER_SpawnProjectile_Validate(FVector SpawnLoc, FRotator SpawnRot, TSubclassOf<AActor> ProjectileToSpawn, AActor* ProjOwner, AActor* HomingTarget)
 {
 	return true;
 }

@@ -22,6 +22,7 @@
 #include "Runtime/Engine/Classes/AI/Navigation/NavigationSystem.h"
 #include "MyPlayerStart_Base.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "CharacterAnimInstance.h"
 #include "Sem6.h"
 
 // Sets default values
@@ -38,8 +39,6 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 	bBindDynamicDoOnce = true;
 	bOnCollectDoOnce = true;
 	MaxHealth = 100.0f;
-	Health = MaxHealth;
-	LocalHealth = Health;
 	bDie = false;
 	bIsDying = false;
 	bIsHoldingBox = false;
@@ -56,6 +55,9 @@ ACharacter_Base::ACharacter_Base(const class FObjectInitializer& ObjectInitializ
 
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
+
+	HomingLaucnherTarget = CreateDefaultSubobject<USceneComponent>(TEXT("Homing Launcher Target"));
+	HomingLaucnherTarget->SetupAttachment(RootComponent);
 }
 
 void ACharacter_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -130,10 +132,35 @@ float ACharacter_Base::ProcessDamageTypeDamage_Implementation(float Damage, AAct
 	return 0.0f;
 }
 
+void ACharacter_Base::UpdateAnimInstanceData()
+{
+	UCharacterAnimInstance* CharAnimInst = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+
+	if (!CharAnimInst)
+		return;
+
+	// if player dead exit early
+	if (!IsAlive())
+	{
+		CharAnimInst->IsAlive = false;
+		CharAnimInst->IsMoving = false;
+		CharAnimInst->IsRunning = false;
+		CharAnimInst->IsFalling = false;
+		return;
+	}
+
+	CharAnimInst->IsAlive = IsAlive();
+	CharAnimInst->IsMoving = GetVelocity().Size() > 100.0f;
+	CharAnimInst->IsRunning = IsRunning();
+	CharAnimInst->IsFalling = GetMovementComponent()->IsFalling();
+}
+
 // Called when the game starts or when spawned
 void ACharacter_Base::BeginPlay()
 {
 	Super::BeginPlay();
+	Health = MaxHealth;
+	LocalHealth = Health;
 	//I kinda Broke it, Server always Return 0.5f so i manually set it here
 	CustomTimeDilation = 1.0f;
 
@@ -143,17 +170,23 @@ void ACharacter_Base::BeginPlay()
 void ACharacter_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateAnimInstanceData();
+
 	if (MyPlayerController!=NULL  && GetController()->IsLocalController())
 	{
-		SphereTraceLootable();
+		if(!bIsTargeting)
+			SphereTraceLootable();
+
 		SetTargetting(GetMyPlayerController()->GetIsAiming());
 		RegenStamina();
 	}
 
 	if (GetIsTargetting() && GetCurrentWeapon()!= NULL)
 	{
-		if (GetCurrentWeapon()->GetWeaponFireType() == EWeaponFireType::WT_ProjecTile)
+		if (GetCurrentWeapon()->GetWeaponFireType() == EWeaponFireType::WT_ProjecTile && !GetCurrentWeapon()->bIsHomming)
 			GetCurrentWeapon()->DrawTrajectory();
+		else if (GetCurrentWeapon()->bIsHomming) 
+			GetCurrentWeapon()->HommingMissleTargetTrace();
 	}
 	
 	if (bCheckMap) 
@@ -221,6 +254,22 @@ void ACharacter_Base::PitchLookUp(float axis)
 void ACharacter_Base::YawTurn(float axis)
 {
 	AddControllerYawInput(axis);
+}
+
+void ACharacter_Base::StunPlayer(float StunDuration)
+{
+	if (MyPlayerController->IsValidLowLevel()) 
+	{
+		print("Stun");
+		DisableInput(MyPlayerController);
+		GetWorldTimerManager().SetTimer(RemoveStunHandler, this, &ACharacter_Base::RemovePlayerStun, StunDuration, false);
+	}
+}
+
+void ACharacter_Base::RemovePlayerStun()
+{
+	if (MyPlayerController->IsValidLowLevel())
+		EnableInput(MyPlayerController);
 }
 
 void ACharacter_Base::WeaponChoice(float axis)
@@ -299,11 +348,9 @@ void ACharacter_Base::OnDrawStartLocationPath()
 {
 	const FVector ParticleOffSet = FVector(0.0f, 0.0f, 40.0f);
 	UParticleSystemComponent* PathSegmentParticle;
-
 	APlayerState_Base* PState = Cast<APlayerState_Base>(GetMyPlayerController()->PlayerState);
 	if (PState)
 	{
-
 		UNavigationPath *tpath;
 		UNavigationSystem* NavSys = UNavigationSystem::GetCurrent(GetWorld());
 
@@ -341,7 +388,7 @@ void ACharacter_Base::StartLocationPathParticleControl()
 
 	OnDrawStartLocationPath();
 
-	GetWorldTimerManager().SetTimer(ResetPathParticle, this, &ACharacter_Base::FlushStartLocationParticles, 0.1f, false);
+	GetWorldTimerManager().SetTimer(ResetPathParticle, this, &ACharacter_Base::FlushStartLocationParticles, 0.1f, true);
 }
 
 void ACharacter_Base::OnCollect()
@@ -831,13 +878,31 @@ void ACharacter_Base::OnRep_Health_Implementation()
 
 void ACharacter_Base::OnDeathNotify_Implementation()
 {
-	DisableInput(MyPlayerController);
-	bIsDying = true;
-	//TODO Check for Available Currency, Deduct from there
-	//TODO Delete ALL Inventory
-	MyPlayerState->SetPlayerCurrency(MyPlayerState->GetPlayerCurrency() - 5.0f);
-	PlayAnimationState();
-	GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
+	//Check if Is AI
+	if (GetMyPlayerController()->IsValidLowLevel())
+	{
+		DisableInput(MyPlayerController);
+		bIsDying = true;
+		//TODO Check for Available Currency, Deduct from there
+		//TODO Delete ALL Inventory
+		if (MyPlayerState->GetPlayerCurrency() >= 5.0f)
+			MyPlayerState->SetPlayerCurrency(MyPlayerState->GetPlayerCurrency() - 5.0f);
+		else
+			MyPlayerState->SetPlayerCurrency(0.0f);
+
+		PlayAnimationState();
+		GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
+	}
+	else 
+	{
+		//TODO Spawn Drops
+		UnPossessed();
+		GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::RemoveAI, 2.0f, false);
+	}
+}
+
+void ACharacter_Base::OnKill()
+{
 }
 
 bool ACharacter_Base::CanRun()
@@ -1236,7 +1301,8 @@ void ACharacter_Base::SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMesh
 void ACharacter_Base::AddWeaponIntoArray(AWeapon_Base* Weapon)
 {
 	Weapon->SetPawnOwner(GetController());
-	Weapon->SetOwner(this);
+	MyPlayerController->SetActorOwner(Weapon, MyPlayerController);
+	//Weapon->SetOwner(this);
 	Inventory.Weapon.Add(Weapon->GetClass());
 	WeaponArray.Add(Weapon);
 	UpdateInventoryUIDelegate.Broadcast();
@@ -1246,6 +1312,11 @@ void ACharacter_Base::AddWeaponIntoArray(AWeapon_Base* Weapon)
 void ACharacter_Base::OnDeathNotifyTimerRespawn()
 {
 	MyPlayerController->RespawnPlayer();
+}
+
+void ACharacter_Base::RemoveAI()
+{
+	Destroy();
 }
 
 void ACharacter_Base::SERVER_OnPunch_Implementation()

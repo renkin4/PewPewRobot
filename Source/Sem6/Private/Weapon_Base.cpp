@@ -11,6 +11,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "HUD_Base.h"
+#include "Sem6.h"
+#include "EngineUtils.h"
+#include "Runtime/Engine/Classes/Components/BoxComponent.h"
+#include "SpawnPoint_Base.h"
 
 // Sets default values
 AWeapon_Base::AWeapon_Base(const FObjectInitializer& ObjectInitializer)
@@ -22,8 +27,10 @@ AWeapon_Base::AWeapon_Base(const FObjectInitializer& ObjectInitializer)
 	WeaponFireType = EWeaponFireType::WT_InstantHit;
 	bReplicates = true;
 	bCanFire = true;
+	bIsHomming = false;
 
 	ShowFireLine = false;
+
 }
 
 // Called when the game starts or when spawned
@@ -38,6 +45,7 @@ void AWeapon_Base::BeginPlay()
 void AWeapon_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
 }
 
 void AWeapon_Base::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -144,6 +152,87 @@ void AWeapon_Base::FlushTrajectoryProjectile()
 		PSC->DestroyComponent();
 	}
 	TrajectoryPathSegPSArray.Empty();
+}
+
+void AWeapon_Base::HommingMissleTargetTrace_Implementation()
+{
+	FHitResult HitData(ForceInit);
+	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	FVector WorldPosition;
+	FVector WorldDirection;
+	const int32 TraceDistance = 7000;
+	const float SphereRadius = 200.0f;
+
+	if (PlayerOwner)
+	{
+		FCollisionQueryParams TraceParams(FName(TEXT("Missle Trace")), true, PlayerOwner->GetPawn());
+		TraceParams.bTraceComplex = false;
+		TraceParams.bReturnPhysicalMaterial = false;
+		TraceParams.AddIgnoredActor(this);
+		TraceParams.AddIgnoredActor(PlayerOwner->GetPawn());
+
+		PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);
+		FVector StartPoint = WorldPosition;
+		FVector EndPoint = StartPoint + (WorldDirection * TraceDistance);
+		GetWorld()->SweepSingleByChannel(HitData, StartPoint, EndPoint, FQuat(), ECollisionChannel::ECC_GameTraceChannel6, FCollisionShape::MakeSphere(SphereRadius), TraceParams);
+		if (HitData.bBlockingHit) 
+		{
+			if (HitData.Actor->GetClass()->IsChildOf(ACharacter_Base::StaticClass())) 
+			{
+				AHUD_Base* MyHUD = Cast<AHUD_Base>(PlayerOwner->GetHUD());
+				if (MyHUD) 
+				{
+					MyHUD->SetHommingTargetted(true);
+					MyHUD->SetHommingTargetLocation(HitData.Actor->GetActorLocation());
+					HommingTarget = HitData.GetActor();
+					GetWorldTimerManager().SetTimer(ResetHomingLauncherHandle, this, &AWeapon_Base::ResetHomingLauncher, 0.5f, false);
+				}
+			}
+				
+		}
+	}
+	//APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	//FVector WorldPosition;
+	//FVector WorldDirection;
+
+	//if (PlayerOwner)
+	//{
+	//	
+	//}
+}
+
+void AWeapon_Base::ResetHomingLauncher()
+{
+	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	AHUD_Base* MyHUD = Cast<AHUD_Base>(PlayerOwner->GetHUD());
+	if (PlayerOwner) 
+	{
+		if (MyHUD)
+		{
+			MyHUD->SetHommingTargetted(false);
+			HommingTarget = NULL;
+		}
+	}
+}
+
+void AWeapon_Base::OnBeginOverlapComponentForLockOn(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	if (PlayerOwner)
+	{
+		if (OtherActor == this || OtherActor == PlayerOwner->GetPawn() || OtherActor->GetClass()->IsChildOf(ASpawnPoint_Base::StaticClass()))
+			return;
+		
+		AHUD_Base* MyHUD = Cast<AHUD_Base>(PlayerOwner->GetHUD());
+		if (MyHUD)
+		{
+			MyHUD->SetHommingTargetted(true);
+			MyHUD->SetHommingTargetLocation(OtherActor->GetActorLocation());
+			HommingTarget = OtherActor;
+			GetWorldTimerManager().SetTimer(ResetHomingLauncherHandle, this, &AWeapon_Base::ResetHomingLauncher, 0.5f, false);
+		}
+	}
+	
 }
 
 ELootAbleType AWeapon_Base::GetLootableType_Implementation()
@@ -287,7 +376,7 @@ void AWeapon_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot)
 	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
 	if (PC) 
 	{
-		PC->SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, this );
+		AActor* ProjectileSpawned = PC->SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, this, HommingTarget);
 	}
 }
 

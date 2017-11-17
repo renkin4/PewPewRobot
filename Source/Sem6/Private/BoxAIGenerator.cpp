@@ -16,6 +16,7 @@ ABoxAIGenerator::ABoxAIGenerator(const FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = false;
 	DelayOnEachSpawn = 30.0f;
 	PercentageToSpawnBox = 0.75f;
+	bAlwaysRelevant = true;
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +44,9 @@ void ABoxAIGenerator::SpawnBoxOrAI()
 		//			SL.MyActor = GM->SpawnCharacter(AIToSpawn, GetActorLocation() + SL.MyLocation);
 		//	}
 		//}
+
+		GetWorld()->ForceGarbageCollection(true); //full purge 
+
 		for (int x = 0; x < SpawnLocation.Num(); x++) 
 		{
 			float RandNum = FMath::FRand();

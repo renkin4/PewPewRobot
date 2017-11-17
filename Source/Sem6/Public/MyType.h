@@ -18,10 +18,11 @@ enum class ECharacterState : uint8
 
 UENUM(BlueprintType)
 enum class EWeaponFireType : uint8
-{
-	WT_None				UMETA(DisplayName = "None"),
-	WT_InstantHit		UMETA(DisplayName = "InstantHit"),
-	WT_ProjecTile		UMETA(DisplayName = "Projectile")
+{	
+	WT_None					UMETA(DisplayName = "None"),
+	WT_InstantHit			UMETA(DisplayName = "InstantHit"),
+	WT_ProjecTile			UMETA(DisplayName = "Projectile"),
+	WT_HommingMissle		UMETA(DisplayName = "Homming Missle")
 };
 
 UENUM(BlueprintType)

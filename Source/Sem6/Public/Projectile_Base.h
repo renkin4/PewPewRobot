@@ -31,4 +31,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Projectile Stats")
 	float GetProjectileGravity() { return ProjectilGravity; }
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Homing Missle")
+	void SetHommingMissle(AActor* TargettedActor);
 };
