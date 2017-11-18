@@ -81,7 +81,7 @@ protected:
 
 	void InstantHitFire();
 
-	void SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot);
+	void SpawnProjectile();
 
 	void GetSpawnRotation();
 	void GetSpawnLocation();
@@ -95,11 +95,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	TSubclassOf<AProjectile_Base> ProjectileToSpawn;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	FVector SocketLocation;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	FRotator SocketRotation;
-	//TODO set at Blueprint 
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponType")
 	EWeaponFireType WeaponFireType;
 
@@ -122,10 +120,7 @@ protected:
 	void ResetCanFire();
 	/*Trajectory*/
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
-	bool bUseShape= false;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
-	UParticleSystem* TrajectoryParticle;
+	bool bShouldDrawTrajectory;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Trajectory")
 	UParticleSystem* TrajectoryShapeParticle;
@@ -149,6 +144,9 @@ protected:
 	/*----------------------*/
 
 public:	
+	UPROPERTY(EditDefaultsOnly, Category = "Delay")
+	float AdditionalDelay;
+
 	UFUNCTION(BlueprintNativeEvent, Category = "Missile")
 	void HommingMissleTargetTrace();
 

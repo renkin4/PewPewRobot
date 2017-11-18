@@ -218,6 +218,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DeathMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* StunMontage;
+
 	UFUNCTION(NetMultiCast, Reliable)
 	void MULTICAST_PlayAnimMontage(UAnimMontage * Montage, float InPlayRate, FName StartSectionName);
 
@@ -303,7 +306,6 @@ protected:
 	UFUNCTION(Server, WithValidation, Reliable)
 	void SERVER_SetWeaponVisible(AWeapon_Base* WeaponToHide, bool bShouldBeVisible);
 	/*----------------------*/
-	FTimerHandle ShootingHandler;
 	FTimerHandle PunchingHandler;
 	FTimerHandle HoldingBoxHandler;
 	FTimerHandle DeathTimeHandler;
@@ -381,8 +383,14 @@ protected:
 	void FlushStartLocationParticles();
 	void StartLocationPathParticleControl();
 
+	UFUNCTION(Client, Reliable)
+	void CLIENT_PlayAnimationAfterStun();
 public:
 	/*Weapon*/
+	FTimerHandle ShootingHandler;
+
+	void StopFiring();
+
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	AWeapon_Base* GetCurrentWeapon();
 

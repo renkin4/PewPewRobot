@@ -261,14 +261,19 @@ void ACharacter_Base::StunPlayer(float StunDuration)
 	if (MyPlayerController->IsValidLowLevel()) 
 	{
 		DisableInput(MyPlayerController);
+		SERVER_StopAnimMontage(GetCurrentMontage());
+		SERVER_PlayAnimMontage(StunMontage, 1.0f, "Default");
 		GetWorldTimerManager().SetTimer(RemoveStunHandler, this, &ACharacter_Base::RemovePlayerStun, StunDuration, false);
 	}
 }
 
 void ACharacter_Base::RemovePlayerStun()
 {
+	//print("Server Client");
 	if (MyPlayerController->IsValidLowLevel())
 		EnableInput(MyPlayerController);
+
+	CLIENT_PlayAnimationAfterStun();
 }
 
 void ACharacter_Base::WeaponChoice(float axis)
@@ -390,6 +395,16 @@ void ACharacter_Base::StartLocationPathParticleControl()
 	GetWorldTimerManager().SetTimer(ResetPathParticle, this, &ACharacter_Base::FlushStartLocationParticles, 0.1f, true);
 }
 
+void ACharacter_Base::CLIENT_PlayAnimationAfterStun_Implementation()
+{
+	if (GetCurrentWeapon()->IsValidLowLevel())
+		SERVER_PlayAnimMontage(ShootingMontage, 1.0f, "HoldingGun");
+	else if (bIsHoldingBox)
+		SERVER_PlayAnimMontage(CarryingBoxMontage, 1.0f, "Default");
+	else
+		SERVER_StopAnimMontage(GetCurrentMontage());
+}
+
 void ACharacter_Base::OnCollect()
 {
 	if (bIsHoldingBox == true)
@@ -430,6 +445,8 @@ void ACharacter_Base::OnFire()
 	if (!CanFire() || !GetCurrentWeapon()->CanFire())
 		return;
 
+	FireWeapon();
+	//Redundant Since Garry Decided to abadon these
 	switch (Cast<IGameplayInterface>(GetCurrentWeapon())->Execute_GetWeaponType(GetCurrentWeapon()))
 	{
 	case EWeaponType::WT_None:
@@ -439,13 +456,12 @@ void ACharacter_Base::OnFire()
 	case EWeaponType::WT_RocketLauncher:
 		CharacterState = ECharacterState::CS_FiringRocket;
 		PlayAnimationState();
-		FireWeapon();
 		break;
+
 	case EWeaponType::WT_MachineGun:
 		CharacterState = ECharacterState::CS_Firing;
 		PlayAnimationState();
-		FireWeapon();
-		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, GetCurrentWeapon()->GetWeaponDelay(), true);
+		GetWorldTimerManager().SetTimer(ShootingHandler, this, &ACharacter_Base::FireWeapon, GetCurrentWeapon()->GetWeaponDelay() + GetCurrentWeapon()->AdditionalDelay, true);
 		break;
 	default:
 		break;
@@ -473,12 +489,11 @@ void ACharacter_Base::OnReleaseFire()
 	case EWeaponType::WT_MachineGun:
 		CharacterState = ECharacterState::CS_HoldingGun;
 		PlayAnimationState();
-		GetWorldTimerManager().ClearTimer(ShootingHandler);
 		break;
 	default:
 		break;
 	}
-	
+	StopFiring();
 }
 
 void ACharacter_Base::OnWalk()
@@ -857,15 +872,19 @@ float ACharacter_Base::SetStamina(float StaminaVal, bool DrainStamina)
 		GetWorldTimerManager().SetTimer(DelayStaminaRegenHandle, this, &ACharacter_Base::TriggerRegenStamina, DelayBeforeRegenStamina, false);
 	}
 	/*-------------*/
+
+	if (Stamina < 0.0f)
+	{
+		Stamina = 0.0f;
+		StopFiring();
+	}
+
 	if (Role < ROLE_Authority)
 	{
 		SERVER_SetStaminaVal(StaminaVal);
 		return StaminaVal;
 	}
 	Stamina = StaminaVal;
-
-	if (Stamina < 0.0f)
-		Stamina = 0.0f;
 
 	OnRep_Stamina();
 	return Stamina;
@@ -892,6 +911,7 @@ void ACharacter_Base::OnDeathNotify_Implementation()
 		PlayAnimationState();
 		GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::OnDeathNotifyTimerRespawn, 2.0f, false);
 	}
+	//is AI
 	else 
 	{
 		//TODO Spawn Drops
@@ -969,11 +989,10 @@ bool ACharacter_Base::SERVER_SwitchAnimMontage_Validate(FName CurrentSection, FN
 
 void ACharacter_Base::PlayAnimationState()
 {
+	//TODO see if weapon Exist
 	//*Animation States need a better Refactor *//
 	if (bIsDying)
 	{
-		print("Died");
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Died"));
 		SERVER_PlayAnimMontage(DeathMontage, 1.0f, "Default");
 		return;
 	}
@@ -1003,7 +1022,7 @@ void ACharacter_Base::PlayAnimationState()
 		break;
 	case ECharacterState::CS_HoldingRocket:
 		SERVER_StopAnimMontage(GetCurrentMontage());
-		SERVER_PlayAnimMontage(RocketLauncherMontage, 1.0f, "HoldingRocket");
+		SERVER_PlayAnimMontage(RocketLauncherMontage, 1.0f, "HoldingGun");
 		//SERVER_SwitchAnimMontage("StartShooting", "HoldingRocket", RocketLauncherMontage);
 		break;
 	case ECharacterState::CS_Punching:
@@ -1156,6 +1175,12 @@ bool ACharacter_Base::CanFire()
 	}
 
 	return false;
+}
+
+void ACharacter_Base::StopFiring()
+{
+	if (ShootingHandler.IsValid())
+		GetWorldTimerManager().ClearTimer(ShootingHandler);
 }
 
 AWeapon_Base* ACharacter_Base::GetCurrentWeapon()
@@ -1386,8 +1411,14 @@ void ACharacter_Base::MULTICAST_SetCollision_Implementation(UStaticMeshComponent
 
 void ACharacter_Base::FireWeapon()
 {
-	if (GetCurrentWeapon()->IsValidLowLevel())
-		GetCurrentWeapon()->FireWeapon();
+	if (GetCurrentWeapon()->IsValidLowLevel()) 
+	{
+		if (GetCurrentWeapon()->CanFire()) 
+		{
+			GetCurrentWeapon()->FireWeapon();
+		}
+		return;
+	}
 }
 
 void ACharacter_Base::SetCurrentWeapon(AWeapon_Base* Weapon)

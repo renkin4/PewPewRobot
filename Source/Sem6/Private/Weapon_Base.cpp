@@ -28,6 +28,8 @@ AWeapon_Base::AWeapon_Base(const FObjectInitializer& ObjectInitializer)
 	bReplicates = true;
 	bCanFire = true;
 	bIsHomming = false;
+	bShouldDrawTrajectory = false;
+	AdditionalDelay = 0.0f;
 
 	ShowFireLine = false;
 
@@ -74,6 +76,9 @@ void AWeapon_Base::ResetCanFire()
 
 void AWeapon_Base::DrawPredictTrajectory()
 {
+	if (!bShouldDrawTrajectory)
+		return;
+
 	/*Refactoring these*/
 	GetSpawnLocation();
 	GetSpawnRotation();
@@ -117,26 +122,16 @@ void AWeapon_Base::DrawPredictTrajectory()
 		FRotator PathSegRotation = UKismetMathLibrary::FindLookAtRotation(PathSeg[x], PathSeg[x + 1]);
 		FTransform CurrentPathSegTransform = FTransform(PathSegRotation, PathSeg[x]);
 		UParticleSystemComponent* TrajectoryPathSegPS;
-		if (bUseShape) 
+
+		PathSegRotation.Yaw = PathSegRotation.Yaw - 90.0f;
+		TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryShapeParticle, CurrentPathSegTransform, true);
+		if (TrajectoryPathSegPS) 
 		{
-			PathSegRotation.Yaw = PathSegRotation.Yaw - 90.0f;
-			TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryShapeParticle, CurrentPathSegTransform, true);
-			if (TrajectoryPathSegPS) 
-			{
-				TrajectoryPathSegPS->SetWorldRotation(PathSegRotation);
-				TrajectoryPathSegPSArray.Add(TrajectoryPathSegPS);
-			}
+			TrajectoryPathSegPS->SetWorldRotation(PathSegRotation);
+			TrajectoryPathSegPSArray.Add(TrajectoryPathSegPS);
 		}
-		else 
-		{
-			TrajectoryPathSegPS = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrajectoryParticle, CurrentPathSegTransform, true);
-			if (TrajectoryPathSegPS)
-			{
-				TrajectoryPathSegPS->SetBeamSourcePoint(0, PathSeg[x], 0);
-				TrajectoryPathSegPS->SetBeamTargetPoint(0, PathSeg[x + 1], 0);
-				TrajectoryPathSegPSArray.Add(TrajectoryPathSegPS);
-			}
-		}
+		
+		
 		
 		//TrajectoryParticle->SetBeamTargetPoint(0, PathSeg[x + 1],0);
 		//DrawDebugLine(GetWorld(), PathSeg[x], PathSeg[x + 1], FColor::Purple, false, 0.05f, 0, 0.5f);
@@ -247,6 +242,9 @@ EWeaponType AWeapon_Base::GetWeaponType_Implementation()
 
 void AWeapon_Base::FireWeapon()
 {
+	if (!CanFire())
+		return;
+
 	ACharacter_Base* CharOwner = Cast<ACharacter_Base>(PawnOwner->GetPawn());
 	if (CharOwner) 
 	{
@@ -254,6 +252,10 @@ void AWeapon_Base::FireWeapon()
 		{
 			CharOwner->SetStamina(CharOwner->GetStaminaVal() - MyStats.StaminaCost, true);
 			FilterFireType();
+		}
+		else
+		{
+			CharOwner->StopFiring();
 		}
 	}
 	//TODO Simulate Particle and sound
@@ -299,9 +301,7 @@ void AWeapon_Base::FilterFireType()
 	case EWeaponFireType::WT_ProjecTile:
 		if (CanFire()) 
 		{
-			GetSpawnLocation();
-			GetSpawnRotation();
-			SpawnProjectile(SocketLocation, SocketRotation);
+			SpawnProjectile();
 			bCanFire = false;
 			GetWorldTimerManager().SetTimer(SpawnFireCoolDown, this, &AWeapon_Base::ResetCanFire, GetWeaponDelay(), true);
 		}
@@ -360,8 +360,7 @@ void AWeapon_Base::InstantHitFire()
 			//Without Aiming
 			if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
 			{
-				TSubclassOf<UDamageType> P;
-				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, P);
+				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
 				EndPoint = HitData.ImpactPoint;
 				DrawDebugSolidBox(GetWorld(), EndPoint, FVector(10.0f, 10.0f, 5.0f), FColor::Red, false, 0.5f, 0);
 			}
@@ -371,12 +370,31 @@ void AWeapon_Base::InstantHitFire()
 	}
 }
 
-void AWeapon_Base::SpawnProjectile(FVector SpawnLoc, FRotator SpawnRot)
+void AWeapon_Base::SpawnProjectile()
 {
-	APlayerController_Base* PC = Cast<APlayerController_Base>(PawnOwner);
-	if (PC) 
+	if (!CanFire())
+		return;
+
+	APlayerController_Base* PlayerOwner = Cast<APlayerController_Base>(PawnOwner);
+	FVector WorldPosition;
+	FVector WorldDirection;
+	SocketLocation = StaticMeshComp[0]->GetSocketLocation("SpawnProjectileLocation");
+
+	if (PlayerOwner)
 	{
-		AActor* ProjectileSpawned = PC->SpawnProjectile(SpawnLoc, SpawnRot, ProjectileToSpawn, this, HommingTarget);
+		if (PlayerOwner->GetIsAiming())
+		{
+			PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);
+			FVector EndPoint = WorldPosition + (WorldDirection * 5000);
+			SocketRotation = UKismetMathLibrary::FindLookAtRotation(PlayerOwner->GetPawn()->GetActorLocation(), EndPoint);
+			FVector TempLocation = SocketLocation;
+
+		}
+		else
+		{
+			SocketRotation = StaticMeshComp[0]->GetSocketRotation("SpawnProjectileLocation");;
+		}
+		AActor* ProjectileSpawned = PlayerOwner->SpawnProjectile(SocketLocation, SocketRotation, ProjectileToSpawn, this, HommingTarget);
 	}
 }
 
