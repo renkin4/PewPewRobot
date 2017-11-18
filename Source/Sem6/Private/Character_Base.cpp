@@ -260,7 +260,6 @@ void ACharacter_Base::StunPlayer(float StunDuration)
 {
 	if (MyPlayerController->IsValidLowLevel()) 
 	{
-		print("Stun");
 		DisableInput(MyPlayerController);
 		GetWorldTimerManager().SetTimer(RemoveStunHandler, this, &ACharacter_Base::RemovePlayerStun, StunDuration, false);
 	}
@@ -722,7 +721,7 @@ void ACharacter_Base::MULTICAST_UpdateColor_Implementation(APlayerState_Base* PS
 	if (PState != NULL)
 	{
 		uint8 TeamNum = PState->GetTeamNum();
-		switch (TeamNum)
+		/*switch (TeamNum)
 		{
 		case 1:
 			SMesh->SetMaterial(0, TeamColorMat[0]);
@@ -736,7 +735,7 @@ void ACharacter_Base::MULTICAST_UpdateColor_Implementation(APlayerState_Base* PS
 		case 4:
 			SMesh->SetMaterial(0, TeamColorMat[3]);
 			break;
-		}
+		}*/
 	}
 }
 

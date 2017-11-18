@@ -115,9 +115,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DamageType")
 	TSubclassOf<UDamageType> InstantShotDamageType;
 
-	UPROPERTY(EditAnywhere, Category = "DamageType")
-	TSubclassOf<UDamageType> ProjectileDamage;
-
 	bool bCanFire;
 
 	FTimerHandle SpawnFireCoolDown;
