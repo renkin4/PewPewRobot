@@ -56,6 +56,8 @@ public:
 	/*---------------------------------------------*/
 	void SetActorOwner(AActor* ActorToSet, AActor* ActorOwner);
 
+	ACharacter * GetMyCharacter() { return MyCharacter; }
+
 protected:
 
 	UFUNCTION(Server,WithValidation,Reliable)
@@ -150,7 +152,11 @@ private:
 	void SetMyCurrency(float Amount);
 	UFUNCTION(Exec, Category = "Console Command")
 	void YangIsAwesome();
+	UFUNCTION(Exec, Category = "Console Command")
+	void SetMyScore(float Amount);
 
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SetMyScore(float Amount);
 	UFUNCTION(Server,WithValidation,Reliable)
 	void SERVER_MaxStamina();
 	UFUNCTION(Server, WithValidation, Reliable)

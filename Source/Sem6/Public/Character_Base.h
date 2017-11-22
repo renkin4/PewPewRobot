@@ -31,6 +31,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Mesh")
 	USceneComponent* HomingLaucnherTarget;
+
+	UFUNCTION(BlueprintCallable, Category = "Stun")
+	void StunPlayer(float StunDuration);
 	
 protected:
 	// Called when the game starts or when spawned
@@ -62,8 +65,6 @@ protected:
 	void PitchLookUp(float axis);
 	void YawTurn(float axis);
 
-	UFUNCTION(BlueprintCallable, Category = "Stun")
-	void StunPlayer(float StunDuration);
 	void RemovePlayerStun();
 
 	FTimerHandle RemoveStunHandler;

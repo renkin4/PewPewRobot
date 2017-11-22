@@ -10,6 +10,19 @@ UMyCheatManager_Base::UMyCheatManager_Base(const FObjectInitializer& ObjectIniti
 {
 }
 
+void UMyCheatManager_Base::SetMyScore(float Amount)
+{
+	APlayerController* MyPC = Cast<APlayerController>(GetOuter());
+	if (MyPC)
+	{
+		APlayerState_Base* PState = Cast<APlayerState_Base>(MyPC->PlayerState);
+		if (PState)
+		{
+			PState->SetPlayerScore(Amount);
+		}
+	}
+}
+
 void UMyCheatManager_Base::MaxStamina()
 {
 	ACharacter_Base* MyChar;

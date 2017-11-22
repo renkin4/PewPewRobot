@@ -316,7 +316,6 @@ void AWeapon_Base::FilterFireType()
 
 void AWeapon_Base::InstantHitFire()
 {
-	//TODO Mini Stun Ability
 	FHitResult HitScreenData(ForceInit);
 	FHitResult HitData(ForceInit);
 	FHitResult DamageInfo(ForceInit);
@@ -346,6 +345,11 @@ void AWeapon_Base::InstantHitFire()
 				//Null UDamageType
 				
 				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				//stun player
+				ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
+				if (AffectedCharacter)
+					AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
+
 				/*Debug*/
 				//TODO refactor to Debug Line Function
 				DrawDebugSolidBox(GetWorld(), ShootEndPoint, FVector(10.0f, 10.0f, 5.0f), FColor::Red, false, 0.5f, 0);
@@ -361,6 +365,11 @@ void AWeapon_Base::InstantHitFire()
 			if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
 			{
 				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				//stun player
+				ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
+				if (AffectedCharacter)
+					AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
+
 				EndPoint = HitData.ImpactPoint;
 				DrawDebugSolidBox(GetWorld(), EndPoint, FVector(10.0f, 10.0f, 5.0f), FColor::Red, false, 0.5f, 0);
 			}

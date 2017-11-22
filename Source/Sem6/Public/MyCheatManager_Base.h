@@ -13,7 +13,9 @@ UCLASS()
 class SEM6_API UMyCheatManager_Base : public UCheatManager
 {
 	GENERATED_UCLASS_BODY()
-	
+
+	void SetMyScore(float Amount);
+
 	void MaxStamina();
 
 	void SetMyCurrency(float Amount);

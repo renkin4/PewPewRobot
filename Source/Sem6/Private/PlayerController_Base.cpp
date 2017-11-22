@@ -342,6 +342,30 @@ void APlayerController_Base::YangIsAwesome()
 	}
 }
 
+void APlayerController_Base::SetMyScore(float Amount)
+{
+	if (Role < ROLE_Authority)
+	{
+		SERVER_SetMyScore(Amount);
+		return;
+	}
+	UMyCheatManager_Base* MyCheatManager = Cast<UMyCheatManager_Base>(CheatManager);
+	if (MyCheatManager)
+	{
+		MyCheatManager->SetMyScore(Amount);
+	}
+}
+
+void APlayerController_Base::SERVER_SetMyScore_Implementation(float Amount)
+{
+	SetMyScore(Amount);
+}
+
+bool APlayerController_Base::SERVER_SetMyScore_Validate(float Amount)
+{
+	return true;
+}
+
 void APlayerController_Base::SERVER_MaxStamina_Implementation()
 {
 	MaxStamina();
