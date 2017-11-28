@@ -252,6 +252,52 @@ void APlayerController_Base::SetActorOwner(AActor * ActorToSet, AActor * ActorOw
 	}
 }
 
+void APlayerController_Base::DealDamage(AActor * DamagedActor, float BaseDamage, const FVector & HitFromDirection, const FHitResult & HitInfo, AController * EventInstigator, AActor * DamageCauser, TSubclassOf<class UDamageType> DamageTypeClass)
+{
+	if (Role < ROLE_Authority) 
+	{
+		SERVER_DealDamage(DamagedActor, BaseDamage, HitFromDirection, HitInfo, EventInstigator, DamageCauser, DamageTypeClass);
+		return;
+	}
+	UGameplayStatics::ApplyPointDamage(DamagedActor, BaseDamage, HitFromDirection, HitInfo, EventInstigator, DamageCauser, DamageTypeClass);
+}
+
+void APlayerController_Base::SimulateParticleFX(UParticleSystem * ParticleSystem, FTransform SpawnTransform, bool bAutoDelete)
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleSystem, SpawnTransform, bAutoDelete);
+	if (Role < ROLE_Authority)
+	{
+		SERVER_SimulateParticleFX( ParticleSystem,  SpawnTransform, bAutoDelete);
+		return;
+	}
+	MULTICAST_SimulateParticleFX(ParticleSystem, SpawnTransform, bAutoDelete);
+}
+
+void APlayerController_Base::SERVER_SimulateParticleFX_Implementation(UParticleSystem * ParticleSystem, FTransform SpawnTransform, bool bAutoDelete)
+{
+	SimulateParticleFX(ParticleSystem, SpawnTransform, bAutoDelete);
+}
+
+bool APlayerController_Base::SERVER_SimulateParticleFX_Validate(UParticleSystem * ParticleSystem, FTransform SpawnTransform, bool bAutoDelete)
+{
+	return true;
+}
+
+void APlayerController_Base::MULTICAST_SimulateParticleFX_Implementation(UParticleSystem * ParticleSystem, FTransform SpawnTransform, bool bAutoDelete)
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleSystem, SpawnTransform, bAutoDelete);
+}
+
+void APlayerController_Base::SERVER_DealDamage_Implementation(AActor * DamagedActor, float BaseDamage, const FVector & HitFromDirection, const FHitResult & HitInfo, AController * EventInstigator, AActor * DamageCauser, TSubclassOf<class UDamageType> DamageTypeClass)
+{
+	DealDamage(DamagedActor, BaseDamage, HitFromDirection, HitInfo, EventInstigator, DamageCauser, DamageTypeClass);
+}
+
+bool APlayerController_Base::SERVER_DealDamage_Validate(AActor * DamagedActor, float BaseDamage, const FVector & HitFromDirection, const FHitResult & HitInfo, AController * EventInstigator, AActor * DamageCauser, TSubclassOf<class UDamageType> DamageTypeClass)
+{
+	return true;
+}
+
 void APlayerController_Base::SERVER_SetActorOwner_Implementation(AActor * ActorToSet, AActor * ActorOwner)
 {
 	SetActorOwner(ActorToSet, ActorOwner);

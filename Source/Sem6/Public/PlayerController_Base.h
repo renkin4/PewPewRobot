@@ -58,7 +58,20 @@ public:
 
 	ACharacter * GetMyCharacter() { return MyCharacter; }
 
+	void DealDamage(AActor * DamagedActor,float BaseDamage,const FVector & HitFromDirection,const FHitResult & HitInfo,AController * EventInstigator,AActor * DamageCauser,
+		TSubclassOf < class UDamageType > DamageTypeClass);
+
+	void SimulateParticleFX(UParticleSystem* ParticleSystem, FTransform SpawnTransform, bool bAutoDelete);
+
 protected:
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_SimulateParticleFX(UParticleSystem* ParticleSystem, FTransform SpawnTransform, bool bAutoDelete);
+	UFUNCTION(NetMultiCast, Reliable)
+	void MULTICAST_SimulateParticleFX(UParticleSystem* ParticleSystem, FTransform SpawnTransform, bool bAutoDelete);
+
+	UFUNCTION(Server, WithValidation, Reliable)
+	void SERVER_DealDamage(AActor * DamagedActor, float BaseDamage, const FVector & HitFromDirection, const FHitResult & HitInfo, AController * EventInstigator, AActor * DamageCauser,
+		TSubclassOf < class UDamageType > DamageTypeClass);
 
 	UFUNCTION(Server,WithValidation,Reliable)
 	void SERVER_SetActorOwner(AActor* ActorToSet, AActor* ActorOwner);

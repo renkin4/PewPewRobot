@@ -15,6 +15,7 @@
 #include "Sem6.h"
 #include "EngineUtils.h"
 #include "Runtime/Engine/Classes/Components/BoxComponent.h"
+#include "Runtime/Engine/Classes/Components/AudioComponent.h"
 #include "SpawnPoint_Base.h"
 
 // Sets default values
@@ -30,6 +31,10 @@ AWeapon_Base::AWeapon_Base(const FObjectInitializer& ObjectInitializer)
 	bIsHomming = false;
 	bShouldDrawTrajectory = false;
 	AdditionalDelay = 0.0f;
+	InstantHitSoundCue = CreateDefaultSubobject<UAudioComponent>(TEXT("Instant Hit Audio"));
+	InstantHitSoundCue->bAlwaysPlay = false;
+	InstantHitSoundCue->SetupAttachment(RootComponent);
+
 
 	ShowFireLine = false;
 
@@ -256,6 +261,7 @@ void AWeapon_Base::FireWeapon()
 		else
 		{
 			CharOwner->StopFiring();
+		//	CharOwner->OnChangeWeapon(); // Get Animation Reset
 		}
 	}
 	//TODO Simulate Particle and sound
@@ -307,6 +313,7 @@ void AWeapon_Base::FilterFireType()
 		}
 		break;
 	case EWeaponFireType::WT_InstantHit:
+		InstantHitSoundCue->Play();
 		InstantHitFire();
 		break;
 	default:
@@ -337,18 +344,19 @@ void AWeapon_Base::InstantHitFire()
 			UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitScreenData, ECC_Visibility, false);
 
 			ShootEndPoint = HitScreenData.bBlockingHit ? HitScreenData.ImpactPoint : WorldPosition + (WorldDirection * 5000);
-			//TODO set Server Notify 
+			//SIMULATE FX
+			PlayerOwner->SimulateParticleFX(MuzzleParticle,FTransform(StaticMeshComp[0]->GetSocketRotation("ShootingPoint"),FVector(ShootStartPoint)),true);
 			//Trace From Gun
 			if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, ShootStartPoint, ShootEndPoint, HitData, ECC_Visibility, false))
 			{
-				//TODO check if it's player // AI deal damage to them
-				//Null UDamageType
-				
-				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
-				//stun player
-				ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
-				if (AffectedCharacter)
-					AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
+				PlayerOwner->DealDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				PlayerOwner->SimulateParticleFX(HitParticle, FTransform(GetActorRotation(), FVector(HitData.ImpactPoint)), true);
+
+				//UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				////stun player
+				//ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
+				//if (AffectedCharacter)
+				//	AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
 
 				/*Debug*/
 				//TODO refactor to Debug Line Function
@@ -361,14 +369,19 @@ void AWeapon_Base::InstantHitFire()
 		{
 			StartPoint = StaticMeshComp[0]->GetSocketLocation("ShootingPoint");
 			EndPoint = StaticMeshComp[0]->GetSocketLocation("ShootingPoint") + (2000 * UKismetMathLibrary::GetForwardVector(StaticMeshComp[0]->GetSocketRotation("ShootingPoint")));
+			//SIMULATE FX
+			PlayerOwner->SimulateParticleFX(MuzzleParticle, FTransform(StaticMeshComp[0]->GetSocketRotation("ShootingPoint"), FVector(StartPoint)), true);
+
 			//Without Aiming
 			if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
 			{
-				UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
-				//stun player
-				ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
-				if (AffectedCharacter)
-					AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
+				//UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				PlayerOwner->DealDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, PawnOwner, this, InstantShotDamageType);
+				PlayerOwner->SimulateParticleFX(HitParticle, FTransform(StaticMeshComp[0]->GetSocketRotation("ShootingPoint"), FVector(HitData.ImpactPoint)), true);
+				////stun player
+				//ACharacter_Base* AffectedCharacter = Cast<ACharacter_Base>(HitData.Actor.Get());
+				//if (AffectedCharacter)
+				//	AffectedCharacter->StunPlayer(MyStats.StunDelayDuration);
 
 				EndPoint = HitData.ImpactPoint;
 				DrawDebugSolidBox(GetWorld(), EndPoint, FVector(10.0f, 10.0f, 5.0f), FColor::Red, false, 0.5f, 0);
@@ -391,6 +404,11 @@ void AWeapon_Base::SpawnProjectile()
 
 	if (PlayerOwner)
 	{
+		PlayerOwner->SimulateParticleFX(MuzzleParticle, FTransform(
+			UKismetMathLibrary::InvertTransform(FTransform(StaticMeshComp[0]->GetSocketRotation("SpawnProjectileLocation"),FVector(0.f))).GetRotation(),
+			FVector(SocketLocation)),
+			true);
+
 		if (PlayerOwner->GetIsAiming())
 		{
 			PlayerOwner->DeprojectScreenPositionToWorld(GetScreenLocation().X*0.5f, GetScreenLocation().Y*0.5f, WorldPosition, WorldDirection);

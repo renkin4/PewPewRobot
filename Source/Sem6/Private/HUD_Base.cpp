@@ -30,7 +30,7 @@ void AHUD_Base::DrawHUD()
 
 void AHUD_Base::StartPulse_Implementation() {}
 
-void AHUD_Base::DrawHommingTarget(FVector Location) 
+void AHUD_Base::DrawHommingTarget_Implementation(FVector Location) 
 {
 	const FVector ProjectedLocation = Project(Location);
 	const float OffsetX = Canvas->SizeX * 0.01f;

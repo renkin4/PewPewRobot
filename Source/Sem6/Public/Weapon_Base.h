@@ -118,6 +118,12 @@ protected:
 	FTimerHandle SpawnFireCoolDown;
 
 	void ResetCanFire();
+	UPROPERTY(EditAnywhere, Category = "Particle")
+	UParticleSystem* MuzzleParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Particle")
+	UParticleSystem* HitParticle;
+
 	/*Trajectory*/
 	UPROPERTY(EditAnywhere, Category = "Trajectory")
 	bool bShouldDrawTrajectory;
@@ -142,6 +148,10 @@ protected:
 
 	FTimerHandle ResetTrajectory;
 	/*----------------------*/
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Sound")
+	UAudioComponent* InstantHitSoundCue;
+
 
 public:	
 	UPROPERTY(EditDefaultsOnly, Category = "Delay")

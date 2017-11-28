@@ -3,6 +3,7 @@
 #include "MyGameState_Base.h"
 #include "PlayerState_Base.h"
 #include "MyGameMode_Base.h"
+#include "PlayerController_Base.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 #include "Sem6.h"
 
@@ -36,6 +37,11 @@ void AMyGameState_Base::CheckScore_Implementation()
 
 void AMyGameState_Base::OnWin_Implementation(APlayerState_Base* PState)
 {
+	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	{
+		APawn* AllPawn = Cast<APawn>(*It);
+		AllPawn->CustomTimeDilation = 0.01f;
+	}
 	PState->OnWin();
 	GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Green, FString::Printf(TEXT("Winner is :: %s"), *PState->PlayerName));
 	/*TODO Unpossessed All Pawn that exist in the world and spawn the UI*/

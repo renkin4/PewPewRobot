@@ -34,6 +34,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Stun")
 	void StunPlayer(float StunDuration);
+
+	UFUNCTION(Client, Reliable)
+	void CLIENT_StunPlayer(float StunDuration);
+	UFUNCTION(Server,WithValidation, Reliable)
+	void SERVER_StunPlayer(float StunDuration);
 	
 protected:
 	// Called when the game starts or when spawned
@@ -193,7 +198,7 @@ protected:
 	bool bIsTargeting;
 	bool bIsCarrying;
 	bool bIsGettingShot;
-	UPROPERTY(BlueprintReadWrite, Replicated,Category = "SpawnLocation")
+	UPROPERTY(BlueprintReadWrite, Replicated,Category = "Box")
 	bool bIsAtBoxHolderLocation;
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -224,9 +229,6 @@ protected:
 
 	UFUNCTION(NetMultiCast, Reliable)
 	void MULTICAST_PlayAnimMontage(UAnimMontage * Montage, float InPlayRate, FName StartSectionName);
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void SERVER_PlayAnimMontage(UAnimMontage * Montage, float InPlayRate, FName StartSectionName);
 
 	UFUNCTION(NetMultiCast, Reliable)
 	void MULTICAST_StopAnimMontage(UAnimMontage * Montage);
@@ -262,7 +264,7 @@ protected:
 
 	void LootableFilter();
 
-	void OnPunch();
+	UFUNCTION(BlueprintNativeEvent, Category = "Punch")
 	void OnPunchNotify();
 	bool bIsPunching;
 	
@@ -356,6 +358,8 @@ protected:
 	/*Team Color*/
 	UPROPERTY(EditAnywhere, Category = "Team Color")
 	TArray<UMaterialInstance*> TeamColorMat;
+	UPROPERTY(EditAnywhere, Category = "Team Color")
+	TArray<UMaterialInstance*> TeamColorMat2;
 
 	void UpdateColor(APlayerState_Base* PState, USkeletalMeshComponent* SMesh);
 
@@ -387,6 +391,12 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void CLIENT_PlayAnimationAfterStun();
 public:
+	UFUNCTION(BlueprintCallable)
+	void OnPunch();
+
+	UFUNCTION(Server, Reliable, WithValidation,BlueprintCallable)
+	void SERVER_PlayAnimMontage(UAnimMontage * Montage, float InPlayRate, FName StartSectionName);
+
 	/*Weapon*/
 	FTimerHandle ShootingHandler;
 
@@ -441,6 +451,14 @@ public:
 
 	UFUNCTION()
 	void OnRep_MyPlayerState();
+
+	UFUNCTION(BlueprintPure, Category = "Health")
+	float GetMaxHealth() { return MaxHealth; }
+
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void SetHealth(float Val) { Health = Val; }
+
 	/*Stamina*/
 	UFUNCTION(BlueprintPure, Category = "Stamina")
 	float GetStaminaVal() {return Stamina;}

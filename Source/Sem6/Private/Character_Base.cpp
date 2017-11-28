@@ -98,6 +98,7 @@ float ACharacter_Base::TakeDamage(float Damage, FDamageEvent const & DamageEvent
 		ActualDamage = Damage;
 	}
 	Health = Health - ActualDamage;
+	StunPlayer(DamageTypeB->StunDuration);
 	//---------------------------------//
 
 	/*Run for server On Rep*/
@@ -258,27 +259,60 @@ void ACharacter_Base::YawTurn(float axis)
 
 void ACharacter_Base::StunPlayer(float StunDuration)
 {
-	if (MyPlayerController->IsValidLowLevel()) 
+	/*if (Role < ROLE_Authority) 
+	{
+		SERVER_StunPlayer(StunDuration);
+		return;
+	}
+	CLIENT_StunPlayer(StunDuration);
+	print("Stun");*/
+	if (MyPlayerController->IsValidLowLevel())
 	{
 		DisableInput(MyPlayerController);
 		SERVER_StopAnimMontage(GetCurrentMontage());
 		SERVER_PlayAnimMontage(StunMontage, 1.0f, "Default");
 		GetWorldTimerManager().SetTimer(RemoveStunHandler, this, &ACharacter_Base::RemovePlayerStun, StunDuration, false);
 	}
+	else 
+	{
+		SERVER_StopAnimMontage(GetCurrentMontage());
+		SERVER_PlayAnimMontage(StunMontage, 1.0f, "Default");
+		GetWorldTimerManager().SetTimer(RemoveStunHandler, this, &ACharacter_Base::RemovePlayerStun, StunDuration, false);
+	}
 }
+
+void ACharacter_Base::CLIENT_StunPlayer_Implementation(float StunDuration)
+{
+	
+}
+
+void ACharacter_Base::SERVER_StunPlayer_Implementation(float StunDuration)
+{
+	StunPlayer(StunDuration);
+}
+
+bool ACharacter_Base::SERVER_StunPlayer_Validate(float StunDuration)
+{
+	return true;
+}
+
 
 void ACharacter_Base::RemovePlayerStun()
 {
 	//print("Server Client");
 	if (MyPlayerController->IsValidLowLevel())
 		EnableInput(MyPlayerController);
-
+	else 	//AI
+	{
+		SERVER_StopAnimMontage(GetCurrentMontage());
+		return;
+	}
 	CLIENT_PlayAnimationAfterStun();
 }
 
 void ACharacter_Base::WeaponChoice(float axis)
 {
-	if (axis > 0.2f) 
+	if (axis > 0.2f && !bIsHoldingBox) 
 	{
 		uint8 SelectionChoice = (uint8)axis - 1;
 		CurrentWeaponIndex = SelectionChoice;
@@ -736,21 +770,25 @@ void ACharacter_Base::MULTICAST_UpdateColor_Implementation(APlayerState_Base* PS
 	if (PState != NULL)
 	{
 		uint8 TeamNum = PState->GetTeamNum();
-		/*switch (TeamNum)
+		switch (TeamNum)
 		{
 		case 1:
 			SMesh->SetMaterial(0, TeamColorMat[0]);
+			SMesh->SetMaterial(1, TeamColorMat[0]);
 			break;
 		case 2:
 			SMesh->SetMaterial(0, TeamColorMat[1]);
+			SMesh->SetMaterial(1, TeamColorMat[1]);
 			break;
 		case 3:
 			SMesh->SetMaterial(0, TeamColorMat[2]);
+			SMesh->SetMaterial(1, TeamColorMat[2]);
 			break;
 		case 4:
 			SMesh->SetMaterial(0, TeamColorMat[3]);
+			SMesh->SetMaterial(1, TeamColorMat[3]);
 			break;
-		}*/
+		}
 	}
 }
 
@@ -897,10 +935,10 @@ void ACharacter_Base::OnRep_Health_Implementation()
 void ACharacter_Base::OnDeathNotify_Implementation()
 {
 	//Check if Is AI
+	bIsDying = true;
 	if (GetMyPlayerController()->IsValidLowLevel())
 	{
 		DisableInput(MyPlayerController);
-		bIsDying = true;
 		//TODO Check for Available Currency, Deduct from there
 		//TODO Delete ALL Inventory
 		if (MyPlayerState->GetPlayerCurrency() >= 5.0f)
@@ -916,6 +954,7 @@ void ACharacter_Base::OnDeathNotify_Implementation()
 	{
 		//TODO Spawn Drops
 		UnPossessed();
+		PlayAnimationState();
 		GetWorldTimerManager().SetTimer(DeathTimeHandler, this, &ACharacter_Base::RemoveAI, 2.0f, false);
 	}
 }
@@ -1168,8 +1207,11 @@ bool ACharacter_Base::CanFire()
 	{
 		if (GetCurrentWeapon()->IsValidLowLevel()) 
 		{
-			if (GetCurrentWeapon()->GetStaminaCost() > GetStaminaVal())
+			if (GetCurrentWeapon()->GetStaminaCost() > GetStaminaVal()) 
+			{
+				OnChangeWeapon();
 				return false;
+			}
 		}
 		return true;
 	}
@@ -1237,13 +1279,13 @@ void ACharacter_Base::OnLootWeapon()
 void ACharacter_Base::OnPunch()
 {
 	bIsPunching = true;
-	TArray<FAnimNotifyEvent> StartPunchNotify = PunchingMontage->Notifies;
-	GetWorldTimerManager().SetTimer(PunchingHandler, this, &ACharacter_Base::OnPunchNotify, StartPunchNotify[0].GetTriggerTime(), false);
 	if (Role < ROLE_Authority) 
 	{
 		SERVER_OnPunch();
 		return;
 	}
+	TArray<FAnimNotifyEvent> StartPunchNotify = PunchingMontage->Notifies;
+	GetWorldTimerManager().SetTimer(PunchingHandler, this, &ACharacter_Base::OnPunchNotify, StartPunchNotify[0].GetTriggerTime(), false);
 	CharacterState = ECharacterState::CS_Punching;
 	PlayAnimationState();
 
@@ -1252,21 +1294,32 @@ void ACharacter_Base::OnPunch()
 	
 }
 
-void ACharacter_Base::OnPunchNotify()
+void ACharacter_Base::OnPunchNotify_Implementation()
 {
+	const float SphereRadius = 30.f;
 	bIsPunching = false;
 	//TODO Deal Damage here
 	FVector StartPoint = this->GetActorLocation();
-	FVector EndPoint = StartPoint + (GetActorForwardVector() * 150);
+	FVector EndPoint = StartPoint + (GetActorForwardVector() * 100);
 	FHitResult HitData(ForceInit);
 	FHitResult DamageInfo(ForceInit);
+	FCollisionQueryParams TraceParams(FName(TEXT("Lootable trace")), true, NULL);
+	TraceParams.bTraceComplex = true;
+	TraceParams.bReturnPhysicalMaterial = false;
+	TraceParams.AddIgnoredActor(this);
 
 	print("ONE PUNCH");
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("ONE PUNCH"));
-	if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
+
+	if (GetWorld()->SweepSingleByChannel(HitData, StartPoint, EndPoint, FQuat(), ECollisionChannel::ECC_Pawn, FCollisionShape::MakeSphere(SphereRadius), TraceParams)) 
 	{
-		UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 10.0f, HitData.ImpactNormal, DamageInfo, GetController(), this, OnePunchDamageClass);
+		UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, GetController(), this, OnePunchDamageClass);
 	}
+
+	////GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("ONE PUNCH"));
+	//if (UMyBlueprintFunctionLibrary::Trace(GetWorld(), this, StartPoint, EndPoint, HitData, ECC_Visibility, false))
+	//{
+	//	UGameplayStatics::ApplyPointDamage(HitData.Actor.Get(), 1.0f, HitData.ImpactNormal, DamageInfo, GetController(), this, OnePunchDamageClass);
+	//}
 	
 	//CharacterState = ECharacterState::CS_Walk;
 }
@@ -1325,7 +1378,7 @@ void ACharacter_Base::SetOnHoldAndDropCollision(UStaticMeshComponent* StaticMesh
 void ACharacter_Base::AddWeaponIntoArray(AWeapon_Base* Weapon)
 {
 	Weapon->SetPawnOwner(GetController());
-	MyPlayerController->SetActorOwner(Weapon, MyPlayerController);
+	//MyPlayerController->SetActorOwner(Weapon, MyPlayerController);
 	//Weapon->SetOwner(this);
 	Inventory.Weapon.Add(Weapon->GetClass());
 	WeaponArray.Add(Weapon);

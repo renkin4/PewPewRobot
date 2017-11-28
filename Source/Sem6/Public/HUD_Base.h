@@ -27,6 +27,7 @@ protected:
 	void StartPulse();
 
 public:
+	UFUNCTION(BlueprintNativeEvent, Category = "Draw Hud")
 	void DrawHommingTarget(FVector Location);
 
 	UPROPERTY(BlueprintReadWrite, Category = "Draw Hud")

@@ -15,6 +15,9 @@ class SEM6_API UDamageType_Base : public UDamageType,
 	public IProcessDamageInterface
 {
 	GENERATED_UCLASS_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "Damage")
+	float StunDuration;
 
 protected:
 	virtual float ProcessDamageTypeDamage_Implementation(float Damage, AActor* ActorToIgnore) override;

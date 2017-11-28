@@ -121,10 +121,10 @@ void APlayerState_Base::CopyProperties(APlayerState* PlayerState)
 
 void APlayerState_Base::CLIENT_UpdateColorOfSpawn_Implementation(UStaticMeshComponent* MeshToChangeColor, UMaterialInterface* MaterialChangeTo)
 {
-	if (MeshToChangeColor) 
-	{
-		MeshToChangeColor->SetMaterial(0, MaterialChangeTo);
-	}
+	//if (MeshToChangeColor) 
+	//{
+	//	MeshToChangeColor->SetMaterial(0, MaterialChangeTo);
+	//}
 
 }
 
