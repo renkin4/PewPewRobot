@@ -24,7 +24,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	/*Spawn Location*/
-	UPROPERTY(EditAnywhere, Category = "Spawn Location")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Spawn Location")
 	TArray<FSpawnLocation> SpawnLocation;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn Location")

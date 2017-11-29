@@ -44,7 +44,6 @@ void AMyGameState_Base::OnWin_Implementation(APlayerState_Base* PState)
 	}
 	PState->OnWin();
 	GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Green, FString::Printf(TEXT("Winner is :: %s"), *PState->PlayerName));
-	/*TODO Unpossessed All Pawn that exist in the world and spawn the UI*/
 }
 
 void AMyGameState_Base::MULTICAST_DestroyActor_Implementation(AActor * ActorToDestroy)
